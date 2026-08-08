@@ -1,0 +1,213 @@
+<Window x:Class="BiliDownloader.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="B站视频下载器" Height="760" Width="1100"
+        Icon="pack://application:,,,/icon/icon.png"
+        MinWidth="960" MinHeight="640"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBg}"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <!-- 队列项模板 -->
+        <DataTemplate x:Key="QueueTemplate">
+            <Border Background="{StaticResource CardBg}" CornerRadius="8" Padding="12,10" Margin="0,4"
+                    BorderBrush="{StaticResource Border}" BorderThickness="1">
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock Text="{Binding DisplayTitle}" FontSize="13" Foreground="{StaticResource TextPrimary}"
+                                   FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <Button DockPanel.Dock="Right" Content="🗑" Style="{StaticResource IconButton}" Width="26" Height="24"
+                                Padding="0" Click="BtnDelete_Click" CommandParameter="{Binding Id}"/>
+                        <Button DockPanel.Dock="Right" Content="⏸" Style="{StaticResource IconButton}" Width="26" Height="24"
+                                Padding="0" Click="BtnPause_Click" CommandParameter="{Binding Id}" Margin="0,0,4,0"/>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding StepText}" FontSize="12"
+                                   Foreground="{StaticResource Accent}" Margin="8,0,10,0"/>
+                    </DockPanel>
+                    <Grid Margin="0,8,0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ProgressBar Grid.Column="0" Height="5" Minimum="0" Maximum="100"
+                                     Value="{Binding ProgressPercent, Mode=OneWay}"/>
+                        <TextBlock Grid.Column="1" Text="{Binding ProgressText}" FontSize="11"
+                                   Foreground="{StaticResource TextMuted}" Margin="10,0,0,0" VerticalAlignment="Center"
+                                   Width="42" TextAlignment="Right"/>
+                    </Grid>
+                    <TextBlock Text="{Binding InfoText}" FontSize="11" Foreground="{StaticResource TextMuted}"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ==================== 顶栏 ==================== -->
+        <Border Grid.Row="0" Background="{StaticResource CardBg}" CornerRadius="8" Padding="16,12"
+                Margin="0,0,0,12" BorderBrush="{StaticResource Border}" BorderThickness="1">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="pack://application:,,,/icon/icon.png" Width="26" Height="26" Stretch="Uniform"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <TextBlock Text="B站视频下载器" FontSize="17" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimary}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock x:Name="TxtLogin" DockPanel.Dock="Right" Text="未登录" FontSize="12"
+                           Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,10,0"
+                           HorizontalAlignment="Right"/>
+                <Button x:Name="BtnLogin" DockPanel.Dock="Right" Content="🔑 登录" FontSize="12"
+                        Padding="8,3" HorizontalAlignment="Right" MinWidth="0"
+                        Style="{StaticResource PrimaryButton}" Click="BtnLogin_Click" Margin="0,0,4,0"/>
+                <Button x:Name="BtnFfmpeg" DockPanel.Dock="Right" Content="⬇ ffmpeg" FontSize="12"
+                        Padding="10,3" HorizontalAlignment="Right" MinWidth="0"
+                        Click="BtnFfmpeg_Click" Margin="0,0,6,0"
+                        ToolTip="查看/安装 ffmpeg（无损合并与音频转码需要）"/>
+            </DockPanel>
+        </Border>
+
+        <!-- ==================== 主区 ==================== -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <!-- 左栏：随窗口动态缩放，可拖拽调整（340~580px） -->
+                <ColumnDefinition Width="2*" MinWidth="340" MaxWidth="580"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="3*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左：输入+解析+信息 -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="0,0,10,0">
+                    <TextBlock Text="粘贴视频链接" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,6"/>
+                    <TextBox x:Name="TxtUrl" Height="40" FontSize="14" Padding="12,0"
+                             KeyDown="TxtUrl_KeyDown"/>
+                    <Button x:Name="BtnParse" Content="🔍 解析" Height="38" Margin="0,8,0,0"
+                            FontSize="13" Style="{StaticResource PrimaryButton}" Click="BtnParse_Click"/>
+
+                    <Border x:Name="PanelInfo" Background="{StaticResource CardBg}" CornerRadius="8" Padding="12"
+                            Margin="0,12,0,0" BorderBrush="{StaticResource Border}" BorderThickness="1"
+                            Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtTitle" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" MaxHeight="44"/>
+                            <TextBlock x:Name="TxtMeta" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,6,0,0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="全选" FontSize="11" Padding="12,5" Click="BtnSelectAll_Click" Margin="0,0,6,0"/>
+                                <Button Content="取消全选" FontSize="11" Padding="12,5" Click="BtnDeselectAll_Click"/>
+                            </StackPanel>
+                            <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                                <ItemsControl x:Name="ListPages">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsSelected}" Margin="0,4" Click="PageCheckBox_Click">
+                                                <TextBlock Text="{Binding DisplayText}" FontSize="12"/>
+                                            </CheckBox>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <!-- UGC 合集（多集） -->
+                            <Border x:Name="PanelSeries" Background="{StaticResource CardBgAlt}" CornerRadius="6" Padding="10"
+                                    Margin="0,10,0,0" BorderBrush="{StaticResource Border}" BorderThickness="1" Visibility="Collapsed">
+                                <StackPanel>
+                                    <TextBlock x:Name="TxtSeriesTitle" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Accent}" TextWrapping="Wrap"/>
+                                    <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto" Margin="0,6,0,0">
+                                        <ItemsControl x:Name="ListSeries">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox IsChecked="{Binding IsSelected}" Margin="0,2" Click="SeriesCheckBox_Click">
+                                                        <TextBlock Text="{Binding DisplayText}" FontSize="11"/>
+                                                    </CheckBox>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 分隔条：可拖动调整左右宽度 -->
+            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                          Background="Transparent" ResizeBehavior="PreviousAndNext" ShowsPreview="True"/>
+
+            <!-- 右：选项 + 队列 -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Background="{StaticResource CardBg}" CornerRadius="8" Padding="12,10"
+                        Margin="0,0,0,12" BorderBrush="{StaticResource Border}" BorderThickness="1">
+                    <WrapPanel>
+                        <TextBlock Text="画质" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="CmbQuality" Width="88" Margin="5,0,14,0"/>
+                        <TextBlock Text="重试" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="CmbRetry" Width="60" Margin="5,0,14,0"/>
+                        <TextBlock Text="并行" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="CmbParallel" Width="60" Margin="5,0,14,0"/>
+                        <TextBlock Text="保存到" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtOutDir" Width="160" Margin="5,0,4,0" FontSize="12"/>
+                        <Button Content="📁" Style="{StaticResource IconButton}" Click="BtnBrowseDir_Click"/>
+                        <Button Content="🗂" Style="{StaticResource IconButton}" Margin="4,0,0,0"
+                                ToolTip="选择缓存文件夹（临时文件存放处，避免C盘爆满）" Click="BtnBrowseCache_Click"/>
+                        <CheckBox x:Name="ChkAudio" Content="仅音频" VerticalAlignment="Center" Margin="12,0,0,0"
+                                  Checked="ChkAudio_Changed" Unchecked="ChkAudio_Changed"/>
+                        <ComboBox x:Name="CmbAudioFormat" Width="72" Margin="6,0,0,0" IsEnabled="False"
+                                  ToolTip="音频输出格式（M4A无需ffmpeg，其余格式需要ffmpeg转码）"/>
+                        <Button x:Name="BtnAdd" Content="➕ 加入队列" FontSize="12" Padding="14,6" Margin="8,0,0,0"
+                                Style="{StaticResource PrimaryButton}" Click="BtnAdd_Click"/>
+                    </WrapPanel>
+                </Border>
+
+                <Border Grid.Row="1" Background="{StaticResource CardBg}" CornerRadius="8" Padding="12"
+                        BorderBrush="{StaticResource Border}" BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <DockPanel Margin="0,0,0,8">
+                            <TextBlock Text="📥 下载队列" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimary}"/>
+                            <TextBlock x:Name="TxtQueueCount" DockPanel.Dock="Right" Text="0 个任务"
+                                       FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <ListBox x:Name="ListQueue" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                                 ItemTemplate="{StaticResource QueueTemplate}"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                        <TextBlock x:Name="TxtEmpty" Grid.Row="1" Text="还没有任务" FontSize="14"
+                                   Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ==================== 底部 ==================== -->
+        <Border Grid.Row="2" Background="{StaticResource CardBg}" CornerRadius="8" Padding="14,10"
+                Margin="0,12,0,0" BorderBrush="{StaticResource Border}" BorderThickness="1">
+            <DockPanel>
+                <TextBlock x:Name="TxtStatus" Text="就绪" FontSize="12" Foreground="{StaticResource TextSecondary}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <ProgressBar x:Name="ProgressAll" Width="140" Height="6" Minimum="0" Maximum="100"
+                                 Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <Button x:Name="BtnPauseAll" Content="⏸ 暂停全部" FontSize="12" Padding="12,6"
+                            Click="BtnPauseAll_Click" Margin="0,0,8,0"/>
+                    <Button x:Name="BtnStart" Content="▶ 开始全部" FontSize="12" Padding="14,6"
+                            Style="{StaticResource PrimaryButton}" Click="BtnStart_Click" Margin="0,0,8,0"/>
+                    <Button x:Name="BtnClear" Content="🗑 清空" FontSize="12" Padding="10,6" Click="BtnClear_Click"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

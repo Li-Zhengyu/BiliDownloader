@@ -1,0 +1,16 @@
+## .NET 编译产物
+bin/
+obj/
+*.user
+
+## 发布输出
+publish/
+
+## VS Code / IDE
+.vs/
+.vscode/
+*.suo
+
+## 临时与日志
+*.log
+*.tmp
