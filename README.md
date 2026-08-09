@@ -1,6 +1,6 @@
 # 🎬 BiliDownloader — B站视频下载器
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
 
 一个基于 **C# / .NET 8 / WPF** 的 B站（bilibili）视频下载器，界面美观、操作简单、单文件免安装、运行高效。
 
@@ -144,11 +144,11 @@ A：把缓存目录（🗂）改到空间充足的盘，程序会在每个任务
 
 ## 📄 许可证
 
-本项目采用 **MIT License**，详见 [LICENSE](LICENSE)。
+本项目采用 **GNU General Public License v3.0**（GPL-3.0），详见 [LICENSE](LICENSE)。
 
 - ✅ 允许：商用、修改、分发、私用
-- 📌 要求：保留版权声明与许可证
-- 🚫 禁止：无（但请遵守上文免责声明，勿用于侵权用途）
+- 📌 要求：**基于本项目的衍生作品必须同样以 GPL 协议开源**、保留版权声明
+- 🚫 禁止：将本项目或其衍生作品用于闭源商用（请同时遵守上文免责声明，勿用于侵权用途）
 
 ---
 
