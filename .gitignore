@@ -5,6 +5,8 @@ obj/
 
 ## 发布输出
 publish/
+publish-fd/
+release/
 
 ## VS Code / IDE
 .vs/
