@@ -29,8 +29,43 @@ public partial class MainWindow : Window
         InitBackground();
     }
 
-    /// <summary>加载内置的预模糊背景帧，按 12fps 循环播放，UI 线程不做模糊计算。</summary>
+    /// <summary>背景：优先直接播放原视频（原始帧率），失败时回退到内置帧序列。</summary>
     private void InitBackground()
+    {
+        LoadFrameFallback();
+
+        BgVideo.MediaOpened += (_, _) => _bgTimer?.Stop();
+        BgVideo.MediaEnded += (_, _) =>
+        {
+            BgVideo.Position = TimeSpan.Zero;
+            BgVideo.Play();
+        };
+        BgVideo.MediaFailed += (_, _) => _bgTimer?.Start();
+
+        // single-file 发布下 MediaElement 无法直接读 pack:// 流，先释放到临时文件再播放
+        try
+        {
+            var res = Application.GetResourceStream(
+                new Uri("pack://application:,,,/bg-desktop/bg_loop.mp4", UriKind.Absolute));
+            if (res != null)
+            {
+                var videoPath = Path.Combine(Path.GetTempPath(), "BiliDownloader", "bg_loop.mp4");
+                Directory.CreateDirectory(Path.GetDirectoryName(videoPath)!);
+                using (var fs = File.Create(videoPath)) res.Stream.CopyTo(fs);
+                BgVideo.Source = new Uri(videoPath);
+                BgVideo.Play();
+            }
+        }
+        catch
+        {
+            // 释放失败则继续使用帧序列背景
+        }
+
+        Closed += (_, _) => _bgTimer?.Stop();
+    }
+
+    /// <summary>帧序列兜底：加载内置的预模糊背景帧，按 12fps 循环播放。</summary>
+    private void LoadFrameFallback()
     {
         try
         {
@@ -38,7 +73,7 @@ public partial class MainWindow : Window
             {
                 var frame = new BitmapImage();
                 frame.BeginInit();
-                frame.UriSource = new Uri($"pack://application:,,,/bg/frame_{i:000}.jpg", UriKind.Absolute);
+                frame.UriSource = new Uri($"pack://application:,,,/bg-desktop/frame_{i:000}.jpg", UriKind.Absolute);
                 frame.CacheOption = BitmapCacheOption.OnLoad;
                 frame.EndInit();
                 frame.Freeze();
@@ -53,14 +88,13 @@ public partial class MainWindow : Window
 
         if (_bgFrames.Count == 0) return;
         ImgBackground.Source = _bgFrames[0];
-        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(83) };
+        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _bgTimer.Tick += (_, _) =>
         {
             _bgIndex = (_bgIndex + 1) % _bgFrames.Count;
             ImgBackground.Source = _bgFrames[_bgIndex];
         };
         _bgTimer.Start();
-        Closed += (_, _) => _bgTimer?.Stop();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)

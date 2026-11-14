@@ -45,6 +45,9 @@
         <!-- ==================== 亚克力动态背景 ==================== -->
         <Image x:Name="ImgBackground" Stretch="UniformToFill"
                RenderOptions.BitmapScalingMode="HighQuality"/>
+        <!-- 优先直接播放原视频（保持原始帧率）；播放失败时回退到上面的帧序列 -->
+        <MediaElement x:Name="BgVideo" Stretch="UniformToFill" IsMuted="True"
+                      LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
         <Border Background="#26000000" IsHitTestVisible="False"/>
 
     <Grid Margin="16">

@@ -58,6 +58,9 @@ public partial class MobileMainView : UserControl
         UpdateQueueUI();
         _ = LoadBackgroundAsync();
 
+        // 滑动期间暂停背景帧切换，停止后再恢复，保证滚动手感
+        MainScroll.ScrollChanged += OnMainScrollChanged;
+
         // 部分机型启动时会把滚动位置带到中部，这里复位到顶部
         Dispatcher.UIThread.Post(() => MainScroll.Offset = new Vector(0, 0), DispatcherPriority.Loaded);
     }
@@ -628,6 +631,7 @@ public partial class MobileMainView : UserControl
 
     private List<Bitmap> _bgFrames = [];
     private DispatcherTimer? _bgTimer;
+    private DateTime _lastScrollAt = DateTime.MinValue;
     private int _bgIndex;
 
     private async Task LoadBackgroundAsync()
@@ -660,14 +664,23 @@ public partial class MobileMainView : UserControl
         _bgIndex = 0;
         ImgBackground.Source = _bgFrames[0];
 
+        // 83ms/帧 = 12fps，144 帧约 12 秒一轮，速度与原视频一致
         _bgTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(83) };
         _bgTimer.Tick -= BgTimer_Tick;
         _bgTimer.Tick += BgTimer_Tick;
         _bgTimer.Start();
     }
 
+    private void OnMainScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        // 只记录时间戳，避免在滑动过程中反复创建/销毁 DispatcherTimer 带来额外开销
+        _lastScrollAt = DateTime.UtcNow;
+    }
+
     private void BgTimer_Tick(object? sender, EventArgs e)
     {
+        // 手指拖动期间跳过背景换帧，让渲染资源优先给滚动；停手 200ms 后自动恢复
+        if ((DateTime.UtcNow - _lastScrollAt).TotalMilliseconds < 200) return;
         if (_bgFrames.Count == 0) return;
         _bgIndex = (_bgIndex + 1) % _bgFrames.Count;
         ImgBackground.Source = _bgFrames[_bgIndex];

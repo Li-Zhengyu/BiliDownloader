@@ -14,7 +14,8 @@ namespace BiliDownloader.Android;
 /// </summary>
 internal static class BackgroundStore
 {
-    private const int FrameCount = 48;
+    // 144 帧 × 83ms ≈ 12 秒一轮，与原视频时长/速度一致
+    private const int FrameCount = 144;
     private const string FrameUriFormat = "avares://BiliDownloader.Android/Assets/bg/frame_{0:000}.jpg";
 
     public static string UserPath =>
@@ -36,7 +37,7 @@ internal static class BackgroundStore
         }
     }
 
-    /// <summary>后台线程加载全部内置帧（约 24MB 解码后内存）。</summary>
+    /// <summary>后台线程加载全部内置帧：按 120px 宽解码（模糊壁纸放大无损观感），约 18MB 内存。</summary>
     public static Task<List<Bitmap>> LoadFramesAsync() => Task.Run(() =>
     {
         var frames = new List<Bitmap>(FrameCount);
@@ -44,7 +45,7 @@ internal static class BackgroundStore
         {
             var uri = new Uri(string.Format(FrameUriFormat, i));
             using var stream = AssetLoader.Open(uri);
-            frames.Add(new Bitmap(stream));
+            frames.Add(Bitmap.DecodeToWidth(stream, 120));
         }
         return frames;
     });

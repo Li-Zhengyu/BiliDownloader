@@ -45,7 +45,7 @@ public partial class MainWindow : Window
             for (int i = 0; i < 48; i++)
             {
                 using var stream = AssetLoader.Open(
-                    new Uri($"avares://BiliDownloader.Desktop/Assets/bg/frame_{i:000}.jpg"));
+                    new Uri($"avares://BiliDownloader.Desktop/Assets/bg-desktop/frame_{i:000}.jpg"));
                 _bgFrames.Add(new Bitmap(stream));
             }
         }
@@ -57,7 +57,8 @@ public partial class MainWindow : Window
 
         if (_bgFrames.Count == 0) return;
         ImgBackground.Source = _bgFrames[0];
-        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(83) };
+        // 250ms/帧 = 抽帧时的原始节奏，与 WPF/手机端一致
+        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _bgTimer.Tick += (_, _) =>
         {
             _bgIndex = (_bgIndex + 1) % _bgFrames.Count;

@@ -28,8 +28,9 @@
 
   <ItemGroup>
     <Resource Include="icon\icon.png" />
-    <!-- 预模糊动态背景帧（与手机端同一套素材） -->
-    <Resource Include="bg\*.jpg" />
+    <!-- 动态背景：优先用原视频，帧序列作为编码不支持时的兜底 -->
+    <Resource Include="bg-desktop\*.jpg" />
+    <Resource Include="bg-desktop\bg_loop.mp4" />
   </ItemGroup>
 
 </Project>

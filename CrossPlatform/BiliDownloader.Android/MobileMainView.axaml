@@ -39,7 +39,7 @@
 
         <!-- ==================== 亚克力背景 ==================== -->
         <Image x:Name="ImgBackground" Grid.RowSpan="3" Stretch="UniformToFill"
-               RenderOptions.BitmapInterpolationMode="HighQuality"/>
+               RenderOptions.BitmapInterpolationMode="LowQuality"/>
         <Border Grid.RowSpan="3" Background="{DynamicResource WindowScrim}" IsHitTestVisible="False"/>
 
         <!-- ==================== 顶栏 ==================== -->
@@ -59,7 +59,8 @@
         </Border>
 
         <!-- ==================== 主内容 ==================== -->
-        <ScrollViewer x:Name="MainScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="Transparent">
+        <ScrollViewer x:Name="MainScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="Transparent"
+                      IsScrollInertiaEnabled="True" IsDeferredScrollingEnabled="False">
             <StackPanel Spacing="10" Margin="12" MaxWidth="720" HorizontalAlignment="Center">
 
                 <!-- 链接输入 -->
@@ -90,15 +91,16 @@
                         </StackPanel>
 
                         <TextBlock Text="分P（可多选）" FontSize="12" Foreground="{DynamicResource Accent}"/>
-                        <ListBox x:Name="ListPages" Classes="mobile" SelectionMode="Single">
-                            <ListBox.ItemTemplate>
+                        <!-- 用 ItemsControl 代替 ListBox：避免嵌套滚动容器，滚动手势全部交给外层 ScrollViewer -->
+                        <ItemsControl x:Name="ListPages">
+                            <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <CheckBox IsChecked="{Binding IsSelected}" Margin="0,1">
                                         <TextBlock Text="{Binding DisplayText}" FontSize="13" TextWrapping="Wrap"/>
                                     </CheckBox>
                                 </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <Border x:Name="PanelSeries" IsVisible="False" Background="{DynamicResource CardBgAlt}"
                                 CornerRadius="10" Padding="10"
@@ -106,15 +108,15 @@
                             <StackPanel Spacing="6">
                                 <TextBlock x:Name="TxtSeriesTitle" FontSize="12" FontWeight="SemiBold"
                                            Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
-                                <ListBox x:Name="ListSeries" Classes="mobile" SelectionMode="Single">
-                                    <ListBox.ItemTemplate>
+                                <ItemsControl x:Name="ListSeries">
+                                    <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <CheckBox IsChecked="{Binding IsSelected}" Margin="0,1">
                                                 <TextBlock Text="{Binding DisplayText}" FontSize="12" TextWrapping="Wrap"/>
                                             </CheckBox>
                                         </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -202,8 +204,8 @@
                         <TextBlock x:Name="TxtEmpty" Text="还没有任务，解析后加入队列吧" FontSize="13"
                                    Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center"
                                    Margin="0,16"/>
-                        <ListBox x:Name="ListQueue" Classes="mobile" SelectionMode="Single"
-                                 ItemTemplate="{DynamicResource QueueTemplate}"/>
+                        <ItemsControl x:Name="ListQueue"
+                                      ItemTemplate="{DynamicResource QueueTemplate}"/>
                     </StackPanel>
                 </Border>
 
