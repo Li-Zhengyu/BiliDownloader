@@ -231,6 +231,38 @@ public static class BiliClient
         return ("unknown", "");
     }
 
+    /// <summary>
+    /// 解析分享文本里的链接：先按文本里的 BV/av 号直接识别；
+    /// 识别不到时（如 b23.tv 短链）请求一次并跟随 302，从真实地址/页面里提取 BV 号。
+    /// </summary>
+    public static async Task<(string Type, string Id)> ParseUrlAsync(string text)
+    {
+        var direct = ParseUrl(text);
+        if (direct.Type != "unknown") return direct;
+
+        var shortUrl = Regex.Match(text, @"https?://[^\s""'<>]+").Value;
+        if (string.IsNullOrEmpty(shortUrl)) return direct;
+
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, shortUrl);
+            req.Headers.TryAddWithoutValidation("User-Agent", UserAgent);
+            using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+
+            var finalUrl = resp.RequestMessage?.RequestUri?.ToString() ?? "";
+            var byUrl = ParseUrl(finalUrl);
+            if (byUrl.Type != "unknown") return byUrl;
+
+            // 少数短链跳转后地址里仍没有 BV，再从页面内容里找
+            var html = await resp.Content.ReadAsStringAsync();
+            return ParseUrl(html);
+        }
+        catch
+        {
+            return ("unknown", "");
+        }
+    }
+
     public static async Task<PlayUrlData> GetPlayUrl(string bvid, long cid, int qn = 32, bool audioOnly = false)
     {
         var result = new PlayUrlData();

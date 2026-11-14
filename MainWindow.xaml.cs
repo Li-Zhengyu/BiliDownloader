@@ -203,7 +203,7 @@ public partial class MainWindow : Window
     {
         var url = TxtUrl.Text.Trim();
         if (string.IsNullOrEmpty(url)) { SetStatus("请输入链接"); return; }
-        var (type, id) = BiliClient.ParseUrl(url);
+        var (type, id) = await BiliClient.ParseUrlAsync(url);
         if (type != "video") { SetStatus("无法识别链接"); return; }
 
         BtnParse.IsEnabled = false;
