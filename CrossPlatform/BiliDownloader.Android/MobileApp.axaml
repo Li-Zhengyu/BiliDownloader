@@ -8,16 +8,16 @@
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="WindowBg" Color="#00000000"/>
-                    <SolidColorBrush x:Key="CardBg" Color="#B31E1E1E"/>
-                    <SolidColorBrush x:Key="CardBgAlt" Color="#A62A2A2A"/>
+                    <SolidColorBrush x:Key="CardBg" Color="#8C1E1E1E"/>
+                    <SolidColorBrush x:Key="CardBgAlt" Color="#7A2A2A2A"/>
                     <SolidColorBrush x:Key="HoverBg" Color="#40FFFFFF"/>
                     <SolidColorBrush x:Key="Border" Color="#4DFFFFFF"/>
                     <SolidColorBrush x:Key="BorderStrong" Color="#73FFFFFF"/>
-                    <SolidColorBrush x:Key="WindowScrim" Color="#4D000000"/>
-                    <SolidColorBrush x:Key="ButtonBg" Color="#3D3D3D"/>
-                    <SolidColorBrush x:Key="ButtonHoverBg" Color="#4A4A4A"/>
-                    <SolidColorBrush x:Key="ButtonPressedBg" Color="#353535"/>
-                    <SolidColorBrush x:Key="ComboSelectedBg" Color="#2F4B5F"/>
+                    <SolidColorBrush x:Key="WindowScrim" Color="#26000000"/>
+                    <SolidColorBrush x:Key="ButtonBg" Color="#7A3D3D3D"/>
+                    <SolidColorBrush x:Key="ButtonHoverBg" Color="#8C4A4A4A"/>
+                    <SolidColorBrush x:Key="ButtonPressedBg" Color="#70353535"/>
+                    <SolidColorBrush x:Key="ComboSelectedBg" Color="#992F4B5F"/>
                     <SolidColorBrush x:Key="TextPrimary" Color="#F3F3F3"/>
                     <SolidColorBrush x:Key="TextSecondary" Color="#C2C2C2"/>
                     <SolidColorBrush x:Key="TextMuted" Color="#9A9A9A"/>
@@ -28,16 +28,16 @@
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="WindowBg" Color="#00000000"/>
-                    <SolidColorBrush x:Key="CardBg" Color="#D9FFFFFF"/>
-                    <SolidColorBrush x:Key="CardBgAlt" Color="#CCF2F2F2"/>
+                    <SolidColorBrush x:Key="CardBg" Color="#B3FFFFFF"/>
+                    <SolidColorBrush x:Key="CardBgAlt" Color="#A6F2F2F2"/>
                     <SolidColorBrush x:Key="HoverBg" Color="#1A000000"/>
                     <SolidColorBrush x:Key="Border" Color="#33000000"/>
                     <SolidColorBrush x:Key="BorderStrong" Color="#55000000"/>
-                    <SolidColorBrush x:Key="WindowScrim" Color="#33FFFFFF"/>
-                    <SolidColorBrush x:Key="ButtonBg" Color="#F2F2F2"/>
-                    <SolidColorBrush x:Key="ButtonHoverBg" Color="#E5E5E5"/>
-                    <SolidColorBrush x:Key="ButtonPressedBg" Color="#DADADA"/>
-                    <SolidColorBrush x:Key="ComboSelectedBg" Color="#CCE4FF"/>
+                    <SolidColorBrush x:Key="WindowScrim" Color="#26FFFFFF"/>
+                    <SolidColorBrush x:Key="ButtonBg" Color="#B3F2F2F2"/>
+                    <SolidColorBrush x:Key="ButtonHoverBg" Color="#C7E5E5E5"/>
+                    <SolidColorBrush x:Key="ButtonPressedBg" Color="#B3DADADA"/>
+                    <SolidColorBrush x:Key="ComboSelectedBg" Color="#B3CCE4FF"/>
                     <SolidColorBrush x:Key="TextPrimary" Color="#1A1A1A"/>
                     <SolidColorBrush x:Key="TextSecondary" Color="#454545"/>
                     <SolidColorBrush x:Key="TextMuted" Color="#6B6B6B"/>

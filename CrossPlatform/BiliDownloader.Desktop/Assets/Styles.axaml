@@ -10,7 +10,7 @@
 
     <!-- ==================== 按钮（Win11 圆角） ==================== -->
     <Style Selector="Button">
-        <Setter Property="Background" Value="#3D3D3D"/>
+        <Setter Property="Background" Value="#7A3D3D3D"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -21,10 +21,10 @@
         <Setter Property="CornerRadius" Value="6"/>
     </Style>
     <Style Selector="Button:pointerover">
-        <Setter Property="Background" Value="#4A4A4A"/>
+        <Setter Property="Background" Value="#8C4A4A4A"/>
     </Style>
     <Style Selector="Button:pressed">
-        <Setter Property="Background" Value="#353535"/>
+        <Setter Property="Background" Value="#70353535"/>
     </Style>
     <Style Selector="Button:disabled">
         <Setter Property="Opacity" Value="0.4"/>

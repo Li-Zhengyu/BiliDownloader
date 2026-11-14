@@ -6,11 +6,11 @@
     <Application.Resources>
         <!-- ==================== Win11 深色配色 ==================== -->
         <SolidColorBrush x:Key="WindowBg" Color="#1F1F1F"/>
-        <SolidColorBrush x:Key="CardBg" Color="#2A2A2A"/>
-        <SolidColorBrush x:Key="CardBgAlt" Color="#323232"/>
-        <SolidColorBrush x:Key="HoverBg" Color="#3B3B3B"/>
-        <SolidColorBrush x:Key="Border" Color="#3D3D3D"/>
-        <SolidColorBrush x:Key="BorderStrong" Color="#4A4A4A"/>
+        <SolidColorBrush x:Key="CardBg" Color="#8C1E1E1E"/>
+        <SolidColorBrush x:Key="CardBgAlt" Color="#7A2A2A2A"/>
+        <SolidColorBrush x:Key="HoverBg" Color="#40FFFFFF"/>
+        <SolidColorBrush x:Key="Border" Color="#4DFFFFFF"/>
+        <SolidColorBrush x:Key="BorderStrong" Color="#73FFFFFF"/>
         <SolidColorBrush x:Key="TextPrimary" Color="#F3F3F3"/>
         <SolidColorBrush x:Key="TextSecondary" Color="#A6A6A6"/>
         <SolidColorBrush x:Key="TextMuted" Color="#858585"/>
@@ -32,7 +32,7 @@
 
         <!-- ==================== 按钮（Win11 圆角） ==================== -->
         <Style TargetType="Button">
-            <Setter Property="Background" Value="#3D3D3D"/>
+            <Setter Property="Background" Value="#7A3D3D3D"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -52,10 +52,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#4A4A4A"/>
+                                <Setter TargetName="bd" Property="Background" Value="#8C4A4A4A"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#353535"/>
+                                <Setter TargetName="bd" Property="Background" Value="#70353535"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="bd" Property="Opacity" Value="0.4"/>
@@ -224,7 +224,7 @@
                                 <Setter TargetName="bd" Property="Background" Value="{StaticResource HoverBg}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#2F4B5F"/>
+                                <Setter TargetName="bd" Property="Background" Value="#992F4B5F"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -331,7 +331,7 @@
                                 <Setter TargetName="bd" Property="Background" Value="#333333"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#2F4B5F"/>
+                                <Setter TargetName="bd" Property="Background" Value="#992F4B5F"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

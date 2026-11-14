@@ -41,6 +41,12 @@
         </DataTemplate>
     </Window.Resources>
 
+    <Grid>
+        <!-- ==================== 亚克力动态背景 ==================== -->
+        <Image x:Name="ImgBackground" Stretch="UniformToFill"
+               RenderOptions.BitmapScalingMode="HighQuality"/>
+        <Border Background="#26000000" IsHitTestVisible="False"/>
+
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -209,5 +215,6 @@
                 </StackPanel>
             </DockPanel>
         </Border>
+    </Grid>
     </Grid>
 </Window>

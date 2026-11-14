@@ -28,6 +28,8 @@
 
   <ItemGroup>
     <Resource Include="icon\icon.png" />
+    <!-- 预模糊动态背景帧（与手机端同一套素材） -->
+    <Resource Include="bg\*.jpg" />
   </ItemGroup>
 
 </Project>

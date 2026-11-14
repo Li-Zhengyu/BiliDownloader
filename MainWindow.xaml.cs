@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 public partial class MainWindow : Window
 {
@@ -17,11 +18,49 @@ public partial class MainWindow : Window
     private readonly Downloader _dl = new();
     private VideoInfo? _currentVideo;
     private bool _ffMissingWarned;   // 下载前"未安装ffmpeg"提醒只弹一次
+    private readonly List<BitmapImage> _bgFrames = [];
+    private DispatcherTimer? _bgTimer;
+    private int _bgIndex;
 
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        InitBackground();
+    }
+
+    /// <summary>加载内置的预模糊背景帧，按 12fps 循环播放，UI 线程不做模糊计算。</summary>
+    private void InitBackground()
+    {
+        try
+        {
+            for (int i = 0; i < 48; i++)
+            {
+                var frame = new BitmapImage();
+                frame.BeginInit();
+                frame.UriSource = new Uri($"pack://application:,,,/bg/frame_{i:000}.jpg", UriKind.Absolute);
+                frame.CacheOption = BitmapCacheOption.OnLoad;
+                frame.EndInit();
+                frame.Freeze();
+                _bgFrames.Add(frame);
+            }
+        }
+        catch
+        {
+            _bgFrames.Clear();
+            return;
+        }
+
+        if (_bgFrames.Count == 0) return;
+        ImgBackground.Source = _bgFrames[0];
+        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(83) };
+        _bgTimer.Tick += (_, _) =>
+        {
+            _bgIndex = (_bgIndex + 1) % _bgFrames.Count;
+            ImgBackground.Source = _bgFrames[_bgIndex];
+        };
+        _bgTimer.Start();
+        Closed += (_, _) => _bgTimer?.Stop();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)

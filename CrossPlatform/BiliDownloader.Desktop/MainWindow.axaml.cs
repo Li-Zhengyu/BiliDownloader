@@ -7,6 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using System.Collections.ObjectModel;
@@ -23,14 +24,48 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<QueueItem> _queue = [];
     private VideoInfo? _currentVideo;
     private bool _ffMissingWarned;
+    private readonly List<Bitmap> _bgFrames = [];
+    private DispatcherTimer? _bgTimer;
+    private int _bgIndex;
 
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        InitBackground();
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
+
+    /// <summary>加载内置的预模糊背景帧，按 12fps 循环播放，与手机端视觉保持一致。</summary>
+    private void InitBackground()
+    {
+        try
+        {
+            for (int i = 0; i < 48; i++)
+            {
+                using var stream = AssetLoader.Open(
+                    new Uri($"avares://BiliDownloader.Desktop/Assets/bg/frame_{i:000}.jpg"));
+                _bgFrames.Add(new Bitmap(stream));
+            }
+        }
+        catch
+        {
+            _bgFrames.Clear();
+            return;
+        }
+
+        if (_bgFrames.Count == 0) return;
+        ImgBackground.Source = _bgFrames[0];
+        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(83) };
+        _bgTimer.Tick += (_, _) =>
+        {
+            _bgIndex = (_bgIndex + 1) % _bgFrames.Count;
+            ImgBackground.Source = _bgFrames[_bgIndex];
+        };
+        _bgTimer.Start();
+        Closed += (_, _) => _bgTimer?.Stop();
+    }
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
