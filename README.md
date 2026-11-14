@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
 
-一个基于 **C# / .NET 8 / WPF** 的 B站（bilibili）视频下载器，界面美观、操作简单、单文件免安装、运行高效。
+一个基于 **C# / .NET 8 / WPF**（桌面）与 **.NET 9 / Avalonia**（Android）的 B站（bilibili）视频下载器，界面美观、操作简单、单文件免安装、运行高效。
 
 > ⚠️ **仅供个人学习、研究、交流使用，请勿用于商业用途或传播侵权内容。** 下载内容版权归原作者所有，请尊重 UP 主的劳动成果。
 
@@ -41,6 +41,16 @@
 
 ## 🚀 快速开始
 
+### 下载现成版本
+
+前往 [Releases](https://github.com/Li-Zhengyu/BiliDownloader/releases/latest) 下载最新版本：
+
+| 文件 | 说明 |
+|------|------|
+| `BiliDownloader_v*_win-x64_self-contained.exe` | Windows 单文件免安装，双击即用（无需安装 .NET） |
+| `BiliDownloader_v*_win-x64_framework-dependent.exe` | 体积小，需先安装 .NET 8 Desktop Runtime |
+| `BiliDownloader_v*_Android_arm64.apk` | Android 7.0+（arm64-v8a），Debug 签名，可直接安装 |
+
 ### 方式一：直接运行源码
 
 ```powershell
@@ -73,7 +83,7 @@ APK 输出在 `CrossPlatform/BiliDownloader.Android/bin/Debug/net9.0-android/and
 项目里已内置 `_DisableAvaloniaXamlCompilationInInnerBuild` 目标，用于规避 Avalonia 11.2.x 在 Android 内层 RID 构建中重复拼接 `Avalonia/` 目录导致的 `XAPRAS7023` 错误。
 若项目放在网络/虚拟磁盘（如 Z:）上打包时报 `XABLD7000 Failure to create temporary file`，把源码复制到本地磁盘（如 `C:`）后再执行上面的构建命令即可。
 
-仓库中已提供构建好的安装包：`release/apk/BiliDownloader-Android-arm64-debug.apk`（arm64-v8a，Debug 签名）。
+构建完成后得到的 `com.bilidownloader.app-Signed.apk`（arm64-v8a，Debug 签名）可直接安装到手机。
 手机端默认下载到应用专属目录 `Android/data/com.bilidownloader.app/files/Download`，无需存储权限；也可在界面点「选择」用系统目录选择器指定其他目录，下载完成后自动复制过去。
 
 > Debug 构建默认启用快速部署（Fast Deployment），程序集不打进 APK，用 `adb install` 直接安装会启动即 `SIGABRT`（`No assemblies found ... Exiting`）。项目已在 csproj 中设置 `EmbedAssembliesIntoApk=true`，产物自包含，可直接安装。
