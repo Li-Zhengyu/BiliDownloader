@@ -48,7 +48,7 @@
         <!-- 优先直接播放原视频（保持原始帧率）；播放失败时回退到上面的帧序列 -->
         <MediaElement x:Name="BgVideo" Stretch="UniformToFill" IsMuted="True"
                       LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
-        <Border Background="#26000000" IsHitTestVisible="False"/>
+        <Border Background="#3D000000" IsHitTestVisible="False"/>
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -90,7 +90,10 @@
             </Grid.ColumnDefinitions>
 
             <!-- 左：输入+解析+信息 -->
-            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+            <!-- 整列铺一层卡片底色：文字直接压在壁纸亮部时对比度太低，看不清 -->
+            <Border Grid.Column="0" Background="{StaticResource CardBg}" CornerRadius="8" Padding="12"
+                    BorderBrush="{StaticResource Border}" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0,0,10,0">
                     <TextBlock Text="粘贴视频链接" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,6"/>
                     <TextBox x:Name="TxtUrl" Height="40" FontSize="14" Padding="12,0"
@@ -143,6 +146,7 @@
                     </Border>
                 </StackPanel>
             </ScrollViewer>
+            </Border>
 
             <!-- 分隔条：可拖动调整左右宽度 -->
             <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch"
@@ -158,13 +162,13 @@
                 <Border Grid.Row="0" Background="{StaticResource CardBg}" CornerRadius="8" Padding="12,10"
                         Margin="0,0,0,12" BorderBrush="{StaticResource Border}" BorderThickness="1">
                     <WrapPanel>
-                        <TextBlock Text="画质" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        <TextBlock Text="画质" FontSize="12" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
                         <ComboBox x:Name="CmbQuality" Width="88" Margin="5,0,14,0"/>
-                        <TextBlock Text="重试" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        <TextBlock Text="重试" FontSize="12" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
                         <ComboBox x:Name="CmbRetry" Width="60" Margin="5,0,14,0"/>
-                        <TextBlock Text="并行" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        <TextBlock Text="并行" FontSize="12" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
                         <ComboBox x:Name="CmbParallel" Width="60" Margin="5,0,14,0"/>
-                        <TextBlock Text="保存到" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                        <TextBlock Text="保存到" FontSize="12" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
                         <TextBox x:Name="TxtOutDir" Width="160" Margin="5,0,4,0" FontSize="12"/>
                         <Button Content="📁" Style="{StaticResource IconButton}" Click="BtnBrowseDir_Click"/>
                         <Button Content="🗂" Style="{StaticResource IconButton}" Margin="4,0,0,0"

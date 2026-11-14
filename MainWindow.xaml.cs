@@ -22,6 +22,9 @@ public partial class MainWindow : Window
     private DispatcherTimer? _bgTimer;
     private int _bgIndex;
 
+    /// <summary>背景动画速度：0.5 倍速，11 秒素材约 22 秒一轮。</summary>
+    private const double BgSpeedRatio = 0.5;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -29,12 +32,19 @@ public partial class MainWindow : Window
         InitBackground();
     }
 
-    /// <summary>背景：优先直接播放原视频（原始帧率），失败时回退到内置帧序列。</summary>
+    /// <summary>背景：优先直接播放原视频（0.5 倍速，约 22 秒一轮），失败时回退到内置帧序列。</summary>
     private void InitBackground()
     {
         LoadFrameFallback();
 
-        BgVideo.MediaOpened += (_, _) => _bgTimer?.Stop();
+        BgVideo.SpeedRatio = BgSpeedRatio;
+        BgVideo.MediaOpened += (_, _) =>
+        {
+            _bgTimer?.Stop();
+            // MediaElement 打开后 SpeedRatio 才真正生效，这里再设一次并开始播放
+            BgVideo.SpeedRatio = BgSpeedRatio;
+            BgVideo.Play();
+        };
         BgVideo.MediaEnded += (_, _) =>
         {
             BgVideo.Position = TimeSpan.Zero;
@@ -64,7 +74,7 @@ public partial class MainWindow : Window
         Closed += (_, _) => _bgTimer?.Stop();
     }
 
-    /// <summary>帧序列兜底：加载内置的预模糊背景帧，按 12fps 循环播放。</summary>
+    /// <summary>帧序列兜底：加载内置的预模糊背景帧，按 0.5 倍速（500ms/帧，约 24 秒一轮）循环。</summary>
     private void LoadFrameFallback()
     {
         try
@@ -88,7 +98,7 @@ public partial class MainWindow : Window
 
         if (_bgFrames.Count == 0) return;
         ImgBackground.Source = _bgFrames[0];
-        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _bgTimer.Tick += (_, _) =>
         {
             _bgIndex = (_bgIndex + 1) % _bgFrames.Count;
