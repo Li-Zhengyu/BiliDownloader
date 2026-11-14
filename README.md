@@ -23,6 +23,7 @@
 - ✅ **缓存目录可配置**：临时文件可放到空间充足的盘，下载完成自动清理，C 盘不再爆满
 - ✅ **智能合流**：自动检测 ffmpeg，缺失时弹窗提供"自动下载 / 兼容模式拼接 / 保留 m4s"三种选择（会话内只询问一次）
 - ✅ **深色界面**，支持窗口缩放（最小 960×640），列表可滚动
+- ✅ **手机端（Android）**：独立触屏界面，亚克力半透明风格 + 内置动态壁纸背景（可换成自己的图片）、深色/浅色/跟随系统主题，支持链接解析、多P/合集勾选、画质与并行设置、下载队列、B站官方网页登录、分享链接导入、系统目录选择、前台服务保活；只输出可直接播放的 MP4（最高 1080P）
 
 ---
 
@@ -30,9 +31,11 @@
 
 | 依赖 | 说明 |
 |------|------|
-| [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | 开发/编译需要 |
-| Windows 10 / 11 | 运行需要 |
-| ffmpeg（可选） | 用于无损合并音视频；缺失时可自动下载或使用兼容模式 |
+| [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | 桌面端开发/编译需要 |
+| [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) | Android 手机端编译需要（目标 `net9.0-android`） |
+| Windows 10 / 11 | 桌面版运行需要 |
+| Android 7.0（API 24）及以上 | 手机版运行需要 |
+| ffmpeg（可选） | 用于无损合并音视频；桌面版缺失时可自动下载或使用兼容模式 |
 
 ---
 
@@ -52,6 +55,30 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ```
 
 生成的 `publish/BiliDownloader.exe` 单个文件即可分发，双击运行。
+
+### 方式三：构建 Android 手机版
+
+> 手机端目标框架为 `net9.0-android`，需要 **.NET 9 SDK**（桌面端仍可用 .NET 8 SDK 构建）。
+> 由于 Avalonia 与 Android SDK 的多 ABI 内层构建存在路径冲突，手机端请 **指定单个 ABI 构建**（现代手机用 `android-arm64` 即可）。
+
+```powershell
+# 首次编译前安装 Android workload
+dotnet workload install android
+
+# 构建调试版 APK（使用自动生成的 debug 签名，可直接安装到手机）
+dotnet build CrossPlatform/BiliDownloader.Android/BiliDownloader.Android.csproj -c Debug -p:RuntimeIdentifier=android-arm64
+```
+
+APK 输出在 `CrossPlatform/BiliDownloader.Android/bin/Debug/net9.0-android/android-arm64/com.bilidownloader.app-Signed.apk`。
+项目里已内置 `_DisableAvaloniaXamlCompilationInInnerBuild` 目标，用于规避 Avalonia 11.2.x 在 Android 内层 RID 构建中重复拼接 `Avalonia/` 目录导致的 `XAPRAS7023` 错误。
+若项目放在网络/虚拟磁盘（如 Z:）上打包时报 `XABLD7000 Failure to create temporary file`，把源码复制到本地磁盘（如 `C:`）后再执行上面的构建命令即可。
+
+仓库中已提供构建好的安装包：`release/apk/BiliDownloader-Android-arm64-debug.apk`（arm64-v8a，Debug 签名）。
+手机端默认下载到应用专属目录 `Android/data/com.bilidownloader.app/files/Download`，无需存储权限；也可在界面点「选择」用系统目录选择器指定其他目录，下载完成后自动复制过去。
+
+> Debug 构建默认启用快速部署（Fast Deployment），程序集不打进 APK，用 `adb install` 直接安装会启动即 `SIGABRT`（`No assemblies found ... Exiting`）。项目已在 csproj 中设置 `EmbedAssembliesIntoApk=true`，产物自包含，可直接安装。
+
+> 手机端只输出**可直接播放的 MP4**：优先请求 B站 durl 单文件（最高 1080P）；若该视频只提供 DASH 音视频流，会用 Android 系统 `MediaMuxer` 自动合流成标准 MP4，不再保留 `.m4s`。
 
 ---
 
@@ -76,6 +103,22 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - 或选择「粘贴 Cookie」：从浏览器复制 `SESSDATA` / 完整 Cookie 粘贴
 
 > 登录后可获取更高画质（1080P+ / 4K）。不登录也能下载 720P 及以下。
+
+### 手机端使用
+
+1. 粘贴视频链接或 `BV` 号，点击「解析视频」；也可在 B站 App 里「分享」视频到本应用，自动填入并解析
+2. 勾选分 P / 合集分集，设置画质（最高 1080P，手机端自动使用单文件 MP4）、并行数
+3. 「保存目录」点右侧「选择」调起系统目录选择器，下载完成后自动复制到所选目录
+4. 点击「加入下载队列」，再点底部「开始」；队列内可单独暂停 / 移除
+5. 右上角「登录」会打开 B站 官方网页登录页，登录成功后自动保存登录状态（也可粘贴 Cookie / SESSDATA）
+6. 下载期间应用会启动前台服务并显示常驻通知，切后台不会被系统回收
+7. 未选择目录时文件保存在 `Android/data/com.bilidownloader.app/files/Download`
+8. 界面为亚克力半透明卡片 + 内置动态壁纸背景；「背景图」可点「选择」换成自己的图片，点「默认」还原动态壁纸
+9. 「主题」可在 跟随系统 / 浅色 / 深色 之间切换，选择会记住
+
+> 手机端竖屏锁定；平板（最小宽度 ≥ 600dp）跟随重力自动横竖屏。
+
+> 若启动即闪退，可查看 `Android/data/com.bilidownloader.app/files/BiliDownloader/crash.log`（应用内启动各阶段与异常都会记录在这里），把该文件发回即可定位问题。
 
 ---
 
@@ -137,7 +180,12 @@ A：把缓存目录（🗂）改到空间充足的盘，程序会在每个任务
 ├── SubtitleConverter.cs          # 字幕 JSON→SRT
 ├── Models.cs                     # 数据模型
 ├── Config.cs                     # 配置读写
-└── BiliDownloader.csproj         # 项目文件（含单文件发布配置）
+├── BiliDownloader.csproj         # 项目文件（含单文件发布配置）
+└── CrossPlatform/                # 跨平台版本（Avalonia）
+    ├── BiliDownloader.Core/      # 桌面 / 手机共用：API、下载、合流、配置
+    ├── BiliDownloader.Desktop/   # 跨平台桌面端界面
+    ├── BiliDownloader.Android/   # Android 手机端（MobileApp / MobileMainView / Manifest）
+    └── BiliDownloader.Cross.sln  # 跨平台解决方案
 ```
 
 ---

@@ -1,0 +1,270 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="BiliDownloader.Android.MobileMainView">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="QueueTemplate">
+            <Border Background="{DynamicResource CardBgAlt}" CornerRadius="10" Padding="12,10" Margin="0,4"
+                    BorderBrush="{DynamicResource Border}" BorderThickness="1">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding DisplayTitle}" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding StepText}" FontSize="12"
+                                   Foreground="{DynamicResource Accent}" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Column="1" Text="{Binding ProgressText}" FontSize="12"
+                                   Foreground="{DynamicResource TextMuted}" Margin="8,0,0,0"/>
+                    </Grid>
+                    <ProgressBar Minimum="0" Maximum="100" Height="5"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}"/>
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">
+                            <Button Content="暂停" Height="30" Padding="10,0" FontSize="12"
+                                    Click="BtnPause_Click"
+                                    CommandParameter="{Binding Id}" ToolTip.Tip="暂停"/>
+                            <Button Content="移除" Height="30" Padding="10,0" FontSize="12"
+                                    Click="BtnDelete_Click"
+                                    CommandParameter="{Binding Id}" ToolTip.Tip="移除"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding InfoText}" FontSize="11"
+                                   Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="Transparent">
+
+        <!-- ==================== 亚克力背景 ==================== -->
+        <Image x:Name="ImgBackground" Grid.RowSpan="3" Stretch="UniformToFill"
+               RenderOptions.BitmapInterpolationMode="HighQuality"/>
+        <Border Grid.RowSpan="3" Background="{DynamicResource WindowScrim}" IsHitTestVisible="False"/>
+
+        <!-- ==================== 顶栏 ==================== -->
+        <Border Grid.Row="0" Background="{DynamicResource CardBg}" Padding="14,10"
+                BorderBrush="{DynamicResource Border}" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="B站视频下载器" FontSize="17" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="手机版 · 单P / 多P / 合集" FontSize="11"
+                               Foreground="{DynamicResource TextMuted}"/>
+                </StackPanel>
+                <Button Grid.Column="1" x:Name="BtnLogin" Content="登录" Classes="primary"
+                        FontSize="13" Padding="12,6" MaxWidth="160" VerticalAlignment="Center"
+                        Click="BtnLogin_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- ==================== 主内容 ==================== -->
+        <ScrollViewer x:Name="MainScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="Transparent">
+            <StackPanel Spacing="10" Margin="12" MaxWidth="720" HorizontalAlignment="Center">
+
+                <!-- 链接输入 -->
+                <Border Classes="card">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="视频链接 / BV号" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
+                        <TextBox x:Name="TxtUrl" Height="44" FontSize="14" Padding="12,0"
+                                 VerticalContentAlignment="Center"
+                                 Watermark="粘贴视频链接或 BV 号"
+                                 KeyDown="TxtUrl_KeyDown"/>
+                        <Button x:Name="BtnParse" Content="解析视频" Height="44" Classes="primary"
+                                Click="BtnParse_Click"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 解析结果 -->
+                <Border x:Name="PanelInfo" Classes="card" IsVisible="False">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="TxtTitle" FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="TxtMeta" FontSize="12" Foreground="{DynamicResource TextSecondary}"
+                                   TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="全选" FontSize="12" Padding="14,6" MinHeight="36"
+                                    Click="BtnSelectAll_Click"/>
+                            <Button Content="取消全选" FontSize="12" Padding="14,6" MinHeight="36"
+                                    Click="BtnDeselectAll_Click"/>
+                        </StackPanel>
+
+                        <TextBlock Text="分P（可多选）" FontSize="12" Foreground="{DynamicResource Accent}"/>
+                        <ListBox x:Name="ListPages" Classes="mobile" SelectionMode="Single">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected}" Margin="0,1">
+                                        <TextBlock Text="{Binding DisplayText}" FontSize="13" TextWrapping="Wrap"/>
+                                    </CheckBox>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Border x:Name="PanelSeries" IsVisible="False" Background="{DynamicResource CardBgAlt}"
+                                CornerRadius="10" Padding="10"
+                                BorderBrush="{DynamicResource Border}" BorderThickness="1">
+                            <StackPanel Spacing="6">
+                                <TextBlock x:Name="TxtSeriesTitle" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Accent}" TextWrapping="Wrap"/>
+                                <ListBox x:Name="ListSeries" Classes="mobile" SelectionMode="Single">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsSelected}" Margin="0,1">
+                                                <TextBlock Text="{Binding DisplayText}" FontSize="12" TextWrapping="Wrap"/>
+                                            </CheckBox>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 下载设置 -->
+                <Border Classes="card">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="下载设置" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimary}"/>
+
+                        <Grid ColumnDefinitions="76,*" RowDefinitions="Auto,Auto">
+                            <TextBlock Text="画质" FontSize="13" Foreground="{DynamicResource TextSecondary}"
+                                       VerticalAlignment="Center"/>
+                            <ComboBox x:Name="CmbQuality" Grid.Column="1"/>
+                            <TextBlock Grid.Row="1" Text="并行" FontSize="13" Margin="0,8,0,0"
+                                       Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="CmbParallel" Grid.Row="1" Grid.Column="1" Margin="0,8,0,0"/>
+                        </Grid>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="保存目录" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Border Grid.Column="0" Background="{DynamicResource InputBackground}"
+                                        CornerRadius="8" Padding="12,0" MinHeight="44">
+                                    <TextBlock x:Name="TxtSaveDir" Text="应用内默认目录"
+                                               FontSize="12" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Border>
+                                <Button Grid.Column="1" Content="选择" Height="44" Padding="18,0" Margin="8,0,0,0"
+                                        Click="BtnPickDir_Click"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="背景图" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
+                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                <Border Grid.Column="0" Background="{DynamicResource InputBackground}"
+                                        CornerRadius="8" Padding="12,0" MinHeight="44">
+                                    <TextBlock x:Name="TxtBackground" Text="默认动态壁纸"
+                                               FontSize="12" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Border>
+                                <Button Grid.Column="1" Content="选择" Height="44" Padding="16,0" Margin="8,0,0,0"
+                                        Click="BtnPickBackground_Click"/>
+                                <Button Grid.Column="2" Content="默认" Height="44" Padding="16,0" Margin="8,0,0,0"
+                                        Click="BtnResetBackground_Click"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="主题" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
+                            <Grid ColumnDefinitions="*,8,*,8,*">
+                                <Button x:Name="BtnThemeSystem" Content="跟随系统" Grid.Column="0" Height="40"
+                                        FontSize="13" HorizontalAlignment="Stretch" Click="BtnTheme_Click"/>
+                                <Button x:Name="BtnThemeLight" Content="浅色" Grid.Column="2" Height="40"
+                                        FontSize="13" HorizontalAlignment="Stretch" Click="BtnTheme_Click"/>
+                                <Button x:Name="BtnThemeDark" Content="深色" Grid.Column="4" Height="40"
+                                        FontSize="13" HorizontalAlignment="Stretch" Click="BtnTheme_Click"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <CheckBox x:Name="ChkAudio" Content="仅下载音频（M4A）" IsCheckedChanged="ChkAudio_Changed"/>
+                        <CheckBox x:Name="ChkSubtitle" Content="同时保存字幕（如有）" IsChecked="True"/>
+                        <TextBlock Text="提示：手机端直接保存可播放的 MP4（单文件最高 1080P）；若视频仅提供 DASH 音视频流，会用手机系统能力自动合流。"
+                                   FontSize="11" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap"/>
+
+                        <Button x:Name="BtnAdd" Content="加入下载队列" Height="46" Classes="primary"
+                                Click="BtnAdd_Click"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 下载队列 -->
+                <Border Classes="card" Margin="0,0,0,4">
+                    <StackPanel Spacing="8">
+                        <DockPanel>
+                            <TextBlock x:Name="TxtQueueCount" DockPanel.Dock="Right" Text="0 个任务"
+                                       FontSize="12" Foreground="{DynamicResource TextSecondary}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="下载队列" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimary}"/>
+                        </DockPanel>
+                        <TextBlock x:Name="TxtEmpty" Text="还没有任务，解析后加入队列吧" FontSize="13"
+                                   Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center"
+                                   Margin="0,16"/>
+                        <ListBox x:Name="ListQueue" Classes="mobile" SelectionMode="Single"
+                                 ItemTemplate="{DynamicResource QueueTemplate}"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ==================== 底部操作栏 ==================== -->
+        <Border Grid.Row="2" Background="{DynamicResource CardBg}" Padding="12,8"
+                BorderBrush="{DynamicResource Border}" BorderThickness="0,1,0,0">
+            <StackPanel Spacing="6">
+                <ProgressBar x:Name="ProgressAll" Height="6" Minimum="0" Maximum="100"/>
+                <TextBlock x:Name="TxtStatus" Text="就绪" FontSize="12"
+                           Foreground="{DynamicResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
+                <Grid ColumnDefinitions="*,12,*,12,*">
+                    <Button x:Name="BtnPauseAll" Content="暂停" Height="44" HorizontalAlignment="Stretch"
+                            Click="BtnPauseAll_Click"/>
+                    <Button x:Name="BtnStart" Content="开始" Height="44" Grid.Column="2" HorizontalAlignment="Stretch"
+                            Classes="primary" Click="BtnStart_Click"/>
+                    <Button x:Name="BtnClear" Content="清空" Height="44" Grid.Column="4" HorizontalAlignment="Stretch"
+                            Click="BtnClear_Click"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ==================== 登录浮层 ==================== -->
+        <Border x:Name="LoginOverlay" Grid.RowSpan="3" IsVisible="False" Background="#CC000000" ZIndex="20">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="14" Padding="16" Margin="20,40"
+                    MaxWidth="420" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                    BorderBrush="{DynamicResource Border}" BorderThickness="1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="10">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="✕" Classes="icon"
+                                    HorizontalAlignment="Right" Click="BtnLoginClose_Click"/>
+                            <TextBlock Text="登录 B站账号" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                        </DockPanel>
+
+                        <TextBlock Text="在应用内打开 B站 官方登录页，登录成功后自动保存登录状态。"
+                                   FontSize="13" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
+                        <Button Content="打开 B站 登录页" Height="44" Classes="primary"
+                                Click="BtnWebLogin_Click"/>
+                        <TextBlock x:Name="TxtLoginStatus" Text="" FontSize="12"
+                                   Foreground="{DynamicResource Accent}" TextWrapping="Wrap"
+                                   TextAlignment="Center"/>
+
+                        <Border Height="1" Background="{DynamicResource Border}" Margin="0,6"/>
+
+                        <TextBlock Text="或粘贴 Cookie / SESSDATA" FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBox x:Name="TxtCookie" Height="80" AcceptsReturn="True" TextWrapping="Wrap"
+                                 FontSize="12" Watermark="SESSDATA=... 或完整 Cookie"/>
+                        <Button Content="使用 Cookie 登录" Height="44" Classes="primary"
+                                Click="BtnCookieLogin_Click"/>
+
+                        <TextBlock Text="登录后可获取更高画质。登录凭据仅保存在本机，不会上传。"
+                                   FontSize="11" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Border>
+
+    </Grid>
+</UserControl>

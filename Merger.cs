@@ -31,7 +31,7 @@ public static class Merger
             UseShellExecute = false, CreateNoWindow = true
             // 不重定向输出：避免管道缓冲区满导致ffmpeg阻塞死锁
         };
-        var p = Process.Start(psi);
+        using var p = Process.Start(psi);
         if (p == null) return false;
         try { await p.WaitForExitAsync().WaitAsync(TimeSpan.FromMinutes(30)); }
         catch (TimeoutException) { try { p.Kill(); } catch { } return false; }   // 超时保护
@@ -50,7 +50,7 @@ public static class Merger
             UseShellExecute = false, CreateNoWindow = true
             // 不重定向输出：转码进度会灌满stderr管道导致死锁，改为丢弃输出
         };
-        var p = Process.Start(psi);
+        using var p = Process.Start(psi);
         if (p == null) return false;
         try { await p.WaitForExitAsync().WaitAsync(TimeSpan.FromMinutes(60)); }   // 超时保护（长音频转码较慢）
         catch (TimeoutException) { try { p.Kill(); } catch { } return false; }

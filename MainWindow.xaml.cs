@@ -164,10 +164,13 @@ public partial class MainWindow : Window
             var data = await BiliClient.GetPlayUrl(video.Bvid, cid, 32);
             if (data.Qualities.Count > 0)
             {
-                // 合并：保留完整默认列表（360P~4K），标记 API 实际支持的
+                // 合并：保留完整默认列表（360P~4K），禁用 API 不支持的画质项
                 var supported = new HashSet<int>(data.Qualities.Select(q => q.Quality));
                 CmbQuality.Items.Clear();
                 AddQ("4K", 120); AddQ("1080P", 80); AddQ("720P", 64); AddQ("480P", 32); AddQ("360P", 16);
+                for (int i = 0; i < CmbQuality.Items.Count; i++)
+                    if (CmbQuality.Items[i] is ComboBoxItem ci)
+                        ci.IsEnabled = supported.Contains((int)(ci.Tag ?? 0));
                 // 默认选最高可用
                 var best = data.Qualities.OrderByDescending(x => x.Quality).FirstOrDefault();
                 if (best != null)
@@ -321,7 +324,12 @@ public partial class MainWindow : Window
             {
                 var subs = await BiliClient.GetSubtitles(task.Bvid, task.Cid);
                 var sub = subs.FirstOrDefault(s => s.Lan.Contains("zh")) ?? subs.FirstOrDefault();
-                if (sub != null)
+                if (sub == null)
+                {
+                    if (task.Mode == DownloadMode.SubtitleOnly) { Fail(q, "❌ 无可用字幕"); return; }
+                    // Package 模式：无字幕则跳过字幕，继续下载视频
+                }
+                else
                 {
                     task.StepText = "下载字幕";
                     q.Refresh();
@@ -412,18 +420,21 @@ public partial class MainWindow : Window
             var aPath = Path.Combine(tmpDir, "a.m4s");
             var dl = new Downloader($"https://www.bilibili.com/video/{task.Bvid}/");
 
+            long vDone = 0, vTotal = 0, aDone = 0, aTotal = 0;
             var vt = dl.DownloadAsync(v.BaseUrl, vPath, new Progress<(long Done, long Total)>(p =>
             {
-                var alen = File.Exists(aPath) ? new FileInfo(aPath).Length : 0;
-                task.DownloadedBytes = p.Done + alen;
-                if (p.Total > 0) task.TotalBytes = p.Total + alen;
+                Interlocked.Exchange(ref vDone, p.Done);
+                if (p.Total > 0) Interlocked.Exchange(ref vTotal, p.Total);
+                task.DownloadedBytes = Interlocked.Read(ref vDone) + Interlocked.Read(ref aDone);
+                task.TotalBytes = Interlocked.Read(ref vTotal) + Interlocked.Read(ref aTotal);
                 q.Refresh();
             }), task.Cts.Token, backupUrls: v.BackupUrl);
             var at = dl.DownloadAsync(a.BaseUrl, aPath, new Progress<(long Done, long Total)>(p =>
             {
-                var vlen = File.Exists(vPath) ? new FileInfo(vPath).Length : 0;
-                task.DownloadedBytes = vlen + p.Done;
-                if (p.Total > 0) task.TotalBytes = vlen + p.Total;
+                Interlocked.Exchange(ref aDone, p.Done);
+                if (p.Total > 0) Interlocked.Exchange(ref aTotal, p.Total);
+                task.DownloadedBytes = Interlocked.Read(ref vDone) + Interlocked.Read(ref aDone);
+                task.TotalBytes = Interlocked.Read(ref vTotal) + Interlocked.Read(ref aTotal);
                 q.Refresh();
             }), task.Cts.Token, backupUrls: a.BackupUrl);
             await Task.WhenAll(vt, at);
@@ -466,6 +477,7 @@ public partial class MainWindow : Window
         finally
         {
             CleanupTmp(tmpDir);   // 释放缓存：删除临时文件
+            try { task.Cts?.Dispose(); task.Cts = null; } catch { }
         }
     }
 
@@ -679,13 +691,15 @@ public partial class MainWindow : Window
             var n = matrix.Count;
             var bmp = new WriteableBitmap(260, 260, 96, 96, System.Windows.Media.PixelFormats.Bgr32, null);
             var px = new byte[260 * 260 * 4];
-            int m = 260 / n;
             for (int y = 0; y < 260; y++)
                 for (int x = 0; x < 260; x++)
                 {
-                    bool dark = matrix[y / m][x / m];
+                    int my = Math.Min((int)((double)y * n / 260), n - 1);
+                    int mx = Math.Min((int)((double)x * n / 260), n - 1);
+                    bool dark = matrix[my][mx];
                     int off = (y * 260 + x) * 4;
                     px[off] = px[off + 1] = px[off + 2] = dark ? (byte)0 : (byte)255;
+                    px[off + 3] = 255;
                 }
             bmp.WritePixels(new Int32Rect(0, 0, 260, 260), px, 260 * 4, 0);
             sp.Children.Insert(1, new Image { Source = bmp, Width = 260, Height = 260 });

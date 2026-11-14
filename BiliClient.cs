@@ -78,7 +78,7 @@ public static class BiliClient
     {
         if (useLogin && IsLoggedIn) ApplyLoginCookie();
         var resp = await _http.GetStringAsync(url);
-        var doc = JsonDocument.Parse(resp);
+        using var doc = JsonDocument.Parse(resp);
         var root = doc.RootElement;
         if (root.TryGetProperty("code", out var c) && c.GetInt32() != 0)
         {
@@ -86,7 +86,7 @@ public static class BiliClient
             Log($"API错误 url={url} code={c.GetInt32()} msg={msg}");
             throw new BiliApiException(c.GetInt32(), msg ?? "");
         }
-        return root.GetProperty("data");
+        return root.GetProperty("data").Clone();
     }
 
     public static async Task<VideoInfo> GetVideoInfo(string bvid)
@@ -395,7 +395,7 @@ public static class BiliClient
         string? name = null;
         try
         {
-            var c2 = new HttpClient();
+            using var c2 = new HttpClient();
             c2.DefaultRequestHeaders.Add("User-Agent", UserAgent);
             c2.DefaultRequestHeaders.Add("Cookie", $"SESSDATA={s}");
             var json = await c2.GetStringAsync("https://api.bilibili.com/x/web-interface/nav");
@@ -472,9 +472,13 @@ public static class BiliClient
             var json = await _http.GetStringAsync("https://api.bilibili.com/x/web-interface/nav");
             using var doc = JsonDocument.Parse(json);
             var d = doc.RootElement.GetProperty("data");
-            var img = Path.GetFileNameWithoutExtension(new Uri(d.GetProperty("wbi_img").GetProperty("img_url").GetString()!).AbsolutePath);
-            var sub = Path.GetFileNameWithoutExtension(new Uri(d.GetProperty("wbi_img").GetProperty("sub_url").GetString()!).AbsolutePath);
+            var imgUrl = d.GetProperty("wbi_img").GetProperty("img_url").GetString();
+            var subUrl = d.GetProperty("wbi_img").GetProperty("sub_url").GetString();
+            if (string.IsNullOrEmpty(imgUrl) || string.IsNullOrEmpty(subUrl)) { _mixinKey = ""; return _mixinKey; }
+            var img = Path.GetFileNameWithoutExtension(new Uri(imgUrl).AbsolutePath);
+            var sub = Path.GetFileNameWithoutExtension(new Uri(subUrl).AbsolutePath);
             var lookup = img + sub;
+            if (lookup.Length < 64) { _mixinKey = ""; return _mixinKey; }   // wbi key 需至少 64 字符
             var key = new char[32];
             for (int i = 0; i < 32; i++) key[i] = lookup[MixinKeyEncTab[i]];
             _mixinKey = new string(key);
@@ -522,13 +526,19 @@ public static class BiliClient
         return $"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}?{string.Join("&", parts)}";
     }
 
-    /// <summary>筛选稳定流：跳过 PCDN（带端口）节点，优先 upos-sz-*.bilivideo.com</summary>
+    /// <summary>筛选稳定流：跳过 PCDN（带非默认端口）节点，优先 upos-sz-*.bilivideo.com</summary>
     public static DashStream? PickBestStream(IEnumerable<DashStream> streams, Func<DashStream, bool>? predicate = null)
     {
         var list = predicate == null ? streams.ToList() : streams.Where(predicate).ToList();
         if (list.Count == 0) return null;
-        var best = list.FirstOrDefault(s => !s.BaseUrl.Contains(":") && s.BaseUrl.Contains("upos-sz"))
-                ?? list.FirstOrDefault(s => !s.BaseUrl.Contains(":"))
+        // 判断是否为"带端口的 PCDN 节点"：解析 URL，host 显式带非默认端口视为 PCDN
+        static bool IsPcdn(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var u)) return false;
+            return u.Port != 443 && u.Port != 80 && u.Port != -1;
+        }
+        var best = list.FirstOrDefault(s => !IsPcdn(s.BaseUrl) && s.BaseUrl.Contains("upos-sz"))
+                ?? list.FirstOrDefault(s => !IsPcdn(s.BaseUrl))
                 ?? list.First();
         return best;
     }

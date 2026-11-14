@@ -1,0 +1,149 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ==================== 窗口 ==================== -->
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{StaticResource WindowBg}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei, Noto Sans CJK SC"/>
+    </Style>
+
+    <!-- ==================== 按钮（Win11 圆角） ==================== -->
+    <Style Selector="Button">
+        <Setter Property="Background" Value="#3D3D3D"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="CornerRadius" Value="6"/>
+    </Style>
+    <Style Selector="Button:pointerover">
+        <Setter Property="Background" Value="#4A4A4A"/>
+    </Style>
+    <Style Selector="Button:pressed">
+        <Setter Property="Background" Value="#353535"/>
+    </Style>
+    <Style Selector="Button:disabled">
+        <Setter Property="Opacity" Value="0.4"/>
+    </Style>
+
+    <!-- 主操作按钮 -->
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{StaticResource AccentStrong}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AccentStrong}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.primary:pointerover">
+        <Setter Property="Background" Value="{StaticResource AccentHover}"/>
+    </Style>
+    <Style Selector="Button.primary:pressed">
+        <Setter Property="Background" Value="{StaticResource AccentPressed}"/>
+    </Style>
+
+    <!-- 图标小按钮 -->
+    <Style Selector="Button.icon">
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <!-- ==================== 文本框 ==================== -->
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="{StaticResource CardBg}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="SelectionBrush" Value="{StaticResource Accent}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="CornerRadius" Value="6"/>
+    </Style>
+    <Style Selector="TextBox:focus">
+        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+    </Style>
+    <Style Selector="TextBox:pointerover">
+        <Setter Property="BorderBrush" Value="{StaticResource BorderStrong}"/>
+    </Style>
+
+    <!-- ==================== 下拉框 ==================== -->
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{StaticResource CardBg}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="CornerRadius" Value="6"/>
+    </Style>
+
+    <Style Selector="ComboBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei"/>
+    </Style>
+    <Style Selector="ComboBoxItem:pointerover">
+        <Setter Property="Background" Value="{StaticResource HoverBg}"/>
+    </Style>
+    <Style Selector="ComboBoxItem:selected">
+        <Setter Property="Background" Value="#2F4B5F"/>
+    </Style>
+
+    <!-- ==================== 复选框 ==================== -->
+    <Style Selector="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <!-- ==================== 列表项 ==================== -->
+    <Style Selector="ListBoxItem">
+        <Setter Property="Padding" Value="4,2"/>
+        <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover">
+        <Setter Property="Background" Value="{StaticResource HoverBg}"/>
+    </Style>
+
+    <!-- ==================== 滚动条 ==================== -->
+    <Style Selector="ScrollBar:vertical">
+        <Setter Property="Width" Value="8"/>
+        <Setter Property="Margin" Value="0,0,0,0"/>
+    </Style>
+    <Style Selector="ScrollBar:horizontal">
+        <Setter Property="Height" Value="8"/>
+    </Style>
+
+    <!-- ==================== 进度条 ==================== -->
+    <Style Selector="ProgressBar">
+        <Setter Property="Height" Value="4"/>
+        <Setter Property="Foreground" Value="{StaticResource AccentStrong}"/>
+        <Setter Property="Background" Value="{StaticResource CardBgAlt}"/>
+        <Setter Property="CornerRadius" Value="2"/>
+    </Style>
+
+    <!-- ==================== 文本块 ==================== -->
+    <Style Selector="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei, Noto Sans CJK SC"/>
+    </Style>
+
+    <!-- ==================== 边框 ==================== -->
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{StaticResource CardBg}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="12"/>
+    </Style>
+
+</Styles>

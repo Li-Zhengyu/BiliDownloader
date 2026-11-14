@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Avalonia.Android 的 AvaloniaActivity 继承自 AndroidX 的 AppCompatActivity，
+        AppCompatActivity 强制要求 Activity 使用 Theme.AppCompat 及其子主题，
+        否则启动时会抛出 "You need to use a Theme.AppCompat theme (or descendant) with this activity" 并闪退。
+        因此这里改用 AppCompat 的 DayNight.NoActionBar 作为父主题。
+    -->
+    <style name="MyTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">#161616</item>
+        <item name="android:statusBarColor">#161616</item>
+        <item name="android:navigationBarColor">#161616</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="colorAccent">#60CDFF</item>
+        <item name="android:colorAccent">#60CDFF</item>
+    </style>
+
+    <style name="MyTheme.NoActionBar" parent="MyTheme">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
+</resources>

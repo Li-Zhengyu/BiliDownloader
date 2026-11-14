@@ -1,0 +1,89 @@
+namespace BiliDownloader;
+
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+
+public class Downloader
+{
+    private readonly HttpClient _http;
+    public int Retries { get; set; }
+
+    public Downloader(string? refererPage = null)
+    {
+        var handler = new HttpClientHandler { AutomaticDecompression = System.Net.DecompressionMethods.None, MaxConnectionsPerServer = 16 };
+        _http = new HttpClient(handler);
+        _http.DefaultRequestHeaders.Add("User-Agent", BiliClient.UserAgent);
+        _http.DefaultRequestHeaders.Add("Referer", refererPage ?? "https://www.bilibili.com");
+        _http.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
+        _http.DefaultRequestHeaders.Add("Cookie", BiliClient.CurrentCookie);
+        Retries = Config.Current.RetryCount;
+    }
+
+    public async Task<long> DownloadAsync(string url, string outputPath, IProgress<(long Done, long Total)>? progress = null, CancellationToken ct = default,
+        IEnumerable<string>? backupUrls = null)
+    {
+        var urls = new List<string> { url };
+        if (backupUrls != null) urls.AddRange(backupUrls);
+
+        Exception? lastErr = null;
+        for (int attempt = 0; attempt <= Retries; attempt++)
+        {
+            if (attempt > 0)
+            {
+                ct.ThrowIfCancellationRequested();
+                await Task.Delay(1500 * attempt, ct);
+            }
+            foreach (var u in urls)
+            {
+                try
+                {
+                    var size = await DownloadSingleAsync(u, outputPath, progress, ct);
+                    if (size > 1024) return size;
+                    lastErr = new Exception($"文件太小({size}字节)，可能URL无效");
+                    try { if (File.Exists(outputPath)) File.Delete(outputPath); } catch { }
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    lastErr = ex;
+                    try { if (File.Exists(outputPath)) File.Delete(outputPath); } catch { }
+                }
+            }
+        }
+        throw lastErr ?? new Exception("下载失败");
+    }
+
+    private async Task<long> DownloadSingleAsync(string url, string outputPath, IProgress<(long Done, long Total)>? progress, CancellationToken ct)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+        resp.EnsureSuccessStatusCode();
+
+        var total = resp.Content.Headers.ContentLength ?? 0;
+        if (total > 0) progress?.Report((0, total));
+        await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+        await using var fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536);
+
+        var buf = new byte[65536];
+        long done = 0;
+        int read;
+        var lastReport = DateTime.MinValue;
+        while ((read = await stream.ReadAsync(buf, ct)) > 0)
+        {
+            await fs.WriteAsync(buf.AsMemory(0, read), ct);
+            done += read;
+            if ((DateTime.Now - lastReport).TotalMilliseconds > 150)
+            {
+                lastReport = DateTime.Now;
+                progress?.Report((done, total));
+            }
+        }
+        progress?.Report((done, total));
+        return done;
+    }
+
+    public static string FormatMB(long bytes) => $"{bytes / 1024.0 / 1024.0:F1}MB";
+}

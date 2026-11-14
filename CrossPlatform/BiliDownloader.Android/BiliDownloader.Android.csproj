@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <ApplicationId>com.bilidownloader.app</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <RootNamespace>BiliDownloader.Android</RootNamespace>
+    <!--
+      Debug 构建默认启用快速部署（Fast Deployment）：程序集不打进 APK，而是安装后由
+      `dotnet build -t:Install` 单独推送到 files/.__override__。用 adb install 直接安装时
+      程序集会缺失，启动即报 "No assemblies found ... Exiting" 并 SIGABRT。
+      这里强制把程序集嵌入 APK，使 APK 自包含、可独立安装运行。
+    -->
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <AndroidEnableFastDeployment>false</AndroidEnableFastDeployment>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" Version="11.2.7" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.7" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BiliDownloader.Core\BiliDownloader.Core.csproj" />
+  </ItemGroup>
+
+  <!-- 预模糊动态背景帧（由壁纸视频离线抽帧生成），按 avares:// 资源打包 -->
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <!--
+    Avalonia 11.2.x 的 InjectAvaloniaXamlOutput 会把 IntermediateAssembly 重定向到 obj/.../Avalonia/ 下；
+    Android SDK 的内层 RID 构建（_OuterIntermediateAssembly 由外层传入）会再次执行 Avalonia 的
+    PrepareToCompileAvaloniaXaml，导致路径被拼成 obj/.../Avalonia/Avalonia/xxx.dll 并报 XAPRAS7023。
+    内层构建无需再次编译 XAML（外层已经编译好），因此在内层构建里关闭 Avalonia XAML 编译。
+  -->
+  <Target Name="_DisableAvaloniaXamlCompilationInInnerBuild"
+          Condition=" '$(_OuterIntermediateAssembly)' != '' "
+          BeforeTargets="_FixupIntermediateAssembly;CompileAvaloniaXaml;InjectAvaloniaXamlOutput">
+    <PropertyGroup>
+      <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
+    </PropertyGroup>
+  </Target>
+
+</Project>

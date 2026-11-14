@@ -1,0 +1,31 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="BiliDownloader.Desktop.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Styles>
+        <FluentTheme />
+
+        <!-- ==================== Win11 深色配色覆盖 ==================== -->
+        <StyleInclude Source="avares://BiliDownloader.Desktop/Assets/Styles.axaml" />
+    </Application.Styles>
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="WindowBg" Color="#1F1F1F"/>
+        <SolidColorBrush x:Key="CardBg" Color="#2A2A2A"/>
+        <SolidColorBrush x:Key="CardBgAlt" Color="#323232"/>
+        <SolidColorBrush x:Key="HoverBg" Color="#3B3B3B"/>
+        <SolidColorBrush x:Key="Border" Color="#3D3D3D"/>
+        <SolidColorBrush x:Key="BorderStrong" Color="#4A4A4A"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#F3F3F3"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#A6A6A6"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#858585"/>
+        <SolidColorBrush x:Key="Accent" Color="#60CDFF"/>
+        <SolidColorBrush x:Key="AccentStrong" Color="#0078D4"/>
+        <SolidColorBrush x:Key="AccentHover" Color="#0A84E0"/>
+        <SolidColorBrush x:Key="AccentPressed" Color="#0067B8"/>
+        <SolidColorBrush x:Key="Success" Color="#6CCB5F"/>
+        <SolidColorBrush x:Key="Danger" Color="#F14C4C"/>
+    </Application.Resources>
+
+</Application>
