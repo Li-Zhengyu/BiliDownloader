@@ -110,4 +110,6 @@ public class AppConfig
     public int RetryCount { get; set; } = 3;
     public int MaxParallel { get; set; } = 3;
     public string AudioFormat { get; set; } = "mp3";
+    /// <summary>Android：下载时显示悬浮窗（显示进度并防止后台被杀）</summary>
+    public bool AndroidOverlay { get; set; }
 }

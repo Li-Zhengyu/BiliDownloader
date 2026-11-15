@@ -36,7 +36,13 @@ public partial class MobileMainView : UserControl
 
         Config.Load();
         OutputFolder.Load();
-        TxtSaveDir.Text = OutputFolder.IsCustom ? OutputFolder.DisplayName! : "应用内默认目录（点击右侧选择）";
+        TxtSaveDir.Text = OutputFolder.IsCustom
+            ? OutputFolder.DisplayName!
+            : "默认：下载/B站视频（点击右侧选择）";
+
+        _suppressOverlayToggle = true;
+        ChkOverlay.IsChecked = Config.Current.AndroidOverlay;
+        _suppressOverlayToggle = false;
 
         FillQualities();
         FillOptions();
@@ -119,6 +125,35 @@ public partial class MobileMainView : UserControl
 
     private int SelectedQuality
         => CmbQuality.SelectedItem is ComboBoxItem c ? (int)(c.Tag ?? 32) : 32;
+
+    private bool _suppressOverlayToggle;
+
+    /// <summary>下载浮窗开关：首次开启会跳到系统授权页。</summary>
+    private void ChkOverlay_Changed(object? sender, RoutedEventArgs e)
+    {
+        if (_suppressOverlayToggle) return;
+
+        var on = ChkOverlay.IsChecked == true;
+        Config.Current.AndroidOverlay = on;
+        Config.Save();
+
+        if (!on)
+        {
+            DownloadOverlay.Hide();
+            SetStatus("已关闭下载浮窗");
+            return;
+        }
+
+        if (DownloadOverlay.HasPermission())
+        {
+            SetStatus("已开启下载浮窗，开始下载后会显示进度");
+        }
+        else
+        {
+            DownloadOverlay.RequestPermission();
+            SetStatus("请在系统设置中允许「显示在其他应用上层」，返回后浮窗会自动生效");
+        }
+    }
 
     private void ChkAudio_Changed(object? sender, RoutedEventArgs e)
     {
@@ -276,12 +311,19 @@ public partial class MobileMainView : UserControl
 
             OutputFolder.Save(uri);
             TxtSaveDir.Text = OutputFolder.DisplayName!;
-            SetStatus($"保存目录：{OutputFolder.DisplayName}");
+            SetStatus($"保存目录：{OutputFolder.DisplayName}（权限问题会自动改存「下载/B站视频」）");
         }
         catch (Exception ex)
         {
             SetStatus($"选择目录失败：{ex.Message}");
         }
+    }
+
+    private void BtnResetDir_Click(object? sender, RoutedEventArgs e)
+    {
+        OutputFolder.Reset();
+        TxtSaveDir.Text = "默认：下载/B站视频（点击右侧选择）";
+        SetStatus("已恢复默认保存位置：下载/B站视频");
     }
 
     private void BtnAdd_Click(object? sender, RoutedEventArgs e)
@@ -344,6 +386,8 @@ public partial class MobileMainView : UserControl
 
         SetStatus($"开始下载 {tasks.Count} 个任务（并行 {max}）...");
         DownloadForegroundService.Start($"正在下载 {tasks.Count} 个任务");
+        if (Config.Current.AndroidOverlay && DownloadOverlay.HasPermission())
+            DownloadOverlay.Show("准备下载...", 0);
 
         foreach (var item in tasks)
         {
@@ -406,18 +450,55 @@ public partial class MobileMainView : UserControl
                 view.UpdateQueueUI();
                 view.SetStatus($"完成：{task.DisplayTitle}");
 
-                if (!OutputFolder.IsCustom || string.IsNullOrEmpty(task.OutputFile)) return;
+                var file = task.OutputFile;
+                if (string.IsNullOrEmpty(file)) return;
 
-                try
+                // 先尝试用户选择的目录（SAF），失败或未选择时保存到公共「下载/B站视频」
+                var savedTo = (string?)null;
+                if (OutputFolder.IsCustom)
                 {
-                    if (await OutputFolder.PublishAsync(task.OutputFile!))
-                        view.SetStatus($"已保存到「{OutputFolder.DisplayName}」：{task.DisplayTitle}");
-                    else
-                        view.SetStatus("完成，但复制到所选目录失败（可在文件管理中手动移出）");
+                    try
+                    {
+                        if (await OutputFolder.PublishAsync(file))
+                            savedTo = OutputFolder.DisplayName;
+                    }
+                    catch (Exception ex)
+                    {
+                        BiliClient.Log($"保存到所选目录异常：{ex.Message}");
+                    }
                 }
-                catch (Exception ex)
+
+                if (savedTo == null)
                 {
-                    view.SetStatus($"完成，但复制到所选目录失败：{ex.Message}");
+                    try { savedTo = await PublicStorage.SaveAsync(file); }
+                    catch (Exception ex) { BiliClient.Log($"保存到公共下载目录异常：{ex.Message}"); }
+                }
+
+                if (savedTo != null)
+                {
+                    view.SetStatus($"已保存到「{savedTo}」：{task.DisplayTitle}");
+                    // 应用内目录里的副本对用户不可见，保存成功后删除以节省空间
+                    try { File.Delete(file); } catch { }
+                }
+                else
+                {
+                    view.SetStatus("完成，但保存到公共目录失败（请检查存储空间/权限）");
+                }
+
+                // 字幕（打包下载时）与视频分开保存
+                if (task.Mode == DownloadMode.Package)
+                {
+                    var srt = Path.Combine(task.OutputDir, DownloadProcessor.Sanitize(task.DisplayTitle) + ".srt");
+                    if (File.Exists(srt))
+                    {
+                        var subSaved = OutputFolder.IsCustom && await OutputFolder.PublishAsync(srt)
+                            ? OutputFolder.DisplayName
+                            : await PublicStorage.SaveAsync(srt);
+                        if (!string.IsNullOrEmpty(subSaved))
+                        {
+                            try { File.Delete(srt); } catch { }
+                        }
+                    }
                 }
             });
         }
@@ -619,15 +700,23 @@ public partial class MobileMainView : UserControl
 
         // 前台服务跟随下载状态：有任务就保活并更新进度，全部结束则停止
         var active = _queue.Count(x => x.Task.Status is "下载中" or "排队中" or "暂停中");
+        var percent = total > 0 ? (int)(done * 100 / total) : 0;
         if (active == 0)
         {
             DownloadForegroundService.Stop();
+            DownloadOverlay.Hide();
         }
-        else if ((DateTime.Now - _lastNotify).TotalSeconds >= 2)
+        else
         {
-            _lastNotify = DateTime.Now;
-            var percent = total > 0 ? (int)(done * 100 / total) : 0;
-            DownloadForegroundService.Notify($"正在下载 {active} 个任务 · {percent}%");
+            if ((DateTime.Now - _lastNotify).TotalSeconds >= 2)
+            {
+                _lastNotify = DateTime.Now;
+                DownloadForegroundService.Notify($"正在下载 {active} 个任务 · {percent}%");
+            }
+
+            // 悬浮窗：显示进度，同时提升进程优先级，降低后台被杀的概率
+            if (Config.Current.AndroidOverlay && DownloadOverlay.HasPermission())
+                DownloadOverlay.Show($"正在下载 {active} 个任务 · {percent}%", percent);
         }
     }
 

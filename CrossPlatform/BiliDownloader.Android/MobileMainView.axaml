@@ -139,16 +139,18 @@
 
                         <StackPanel Spacing="4">
                             <TextBlock Text="保存目录" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*,Auto,Auto">
                                 <Border Grid.Column="0" Background="{DynamicResource InputBackground}"
                                         CornerRadius="8" Padding="12,0" MinHeight="44">
-                                    <TextBlock x:Name="TxtSaveDir" Text="应用内默认目录"
+                                    <TextBlock x:Name="TxtSaveDir" Text="默认：下载/B站视频"
                                                FontSize="12" VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextPrimary}"
                                                TextTrimming="CharacterEllipsis"/>
                                 </Border>
                                 <Button Grid.Column="1" Content="选择" Height="44" Padding="18,0" Margin="8,0,0,0"
                                         Click="BtnPickDir_Click"/>
+                                <Button Grid.Column="2" Content="默认" Height="44" Padding="16,0" Margin="8,0,0,0"
+                                        Click="BtnResetDir_Click"/>
                             </Grid>
                         </StackPanel>
 
@@ -183,7 +185,9 @@
 
                         <CheckBox x:Name="ChkAudio" Content="仅下载音频（M4A）" IsCheckedChanged="ChkAudio_Changed"/>
                         <CheckBox x:Name="ChkSubtitle" Content="同时保存字幕（如有）" IsChecked="True"/>
-                        <TextBlock Text="提示：手机端直接保存可播放的 MP4（单文件最高 1080P）；若视频仅提供 DASH 音视频流，会用手机系统能力自动合流。"
+                        <CheckBox x:Name="ChkOverlay" Content="下载浮窗（显示进度，并防止后台被杀）"
+                                  IsCheckedChanged="ChkOverlay_Changed"/>
+                        <TextBlock Text="提示：文件默认保存到手机「下载/B站视频」，文件管理器可直接看到；手机端直接保存可播放的 MP4（单文件最高 1080P）。"
                                    FontSize="11" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap"/>
 
                         <Button x:Name="BtnAdd" Content="加入下载队列" Height="46" Classes="primary"

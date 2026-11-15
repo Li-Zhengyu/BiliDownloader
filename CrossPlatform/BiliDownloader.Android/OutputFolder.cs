@@ -96,32 +96,42 @@ internal static class OutputFolder
         var dirUri = global::Android.Provider.DocumentsContract.BuildDocumentUriUsingTree(tree, treeDocId!);
         if (dirUri == null) return false;
 
-        var name = Path.GetFileName(filePath);
-        var mime = GuessMime(name);
+        // 部分 DocumentsProvider（如系统「下载」根目录）会拒绝含 :*?"<>| 的文件名，这里统一替换
+        var name = Sanitize(Path.GetFileName(filePath));
+        var mime = PublicStorage.GuessMime(name);
 
-        var docUri = global::Android.Provider.DocumentsContract.CreateDocument(resolver, dirUri, mime, name);
-        if (docUri == null) return false;
+        try
+        {
+            var docUri = global::Android.Provider.DocumentsContract.CreateDocument(resolver, dirUri, mime, name);
+            if (docUri == null)
+            {
+                BiliClient.Log($"复制到所选目录失败：系统拒绝在该目录创建 {name}");
+                return false;
+            }
 
-        await using var input = File.OpenRead(filePath);
-        await using var output = resolver.OpenOutputStream(docUri);
-        if (output == null) return false;
+            await using var input = File.OpenRead(filePath);
+            await using var output = resolver.OpenOutputStream(docUri);
+            if (output == null)
+            {
+                BiliClient.Log($"复制到所选目录失败：无法写入 {name}");
+                return false;
+            }
 
-        await input.CopyToAsync(output);
-        return true;
+            await input.CopyToAsync(output);
+            BiliClient.Log($"已复制到所选目录：{DisplayName}/{name}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            BiliClient.Log($"复制到所选目录失败：{ex.Message}");
+            return false;
+        }
     }
 
-    private static string GuessMime(string name)
+    private static string Sanitize(string name)
     {
-        var ext = Path.GetExtension(name).ToLowerInvariant();
-        return ext switch
-        {
-            ".mp4" => "video/mp4",
-            ".m4a" => "audio/mp4",
-            ".mp3" => "audio/mpeg",
-            ".flac" => "audio/flac",
-            ".srt" => "text/plain",
-            ".json" => "application/json",
-            _ => "application/octet-stream",
-        };
+        foreach (var c in new[] { ':', '*', '?', '"', '<', '>', '|', '\\', '/' })
+            name = name.Replace(c, '_');
+        return name;
     }
 }
