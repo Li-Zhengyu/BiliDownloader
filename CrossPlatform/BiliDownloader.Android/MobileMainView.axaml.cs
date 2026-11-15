@@ -464,18 +464,19 @@ public partial class MobileMainView : UserControl
                     }
                     catch (Exception ex)
                     {
-                        BiliClient.Log($"保存到所选目录异常：{ex.Message}");
+                        CrashReporter.WriteText("保存到所选目录异常", ex.ToString());
                     }
                 }
 
                 if (savedTo == null)
                 {
                     try { savedTo = await PublicStorage.SaveAsync(file); }
-                    catch (Exception ex) { BiliClient.Log($"保存到公共下载目录异常：{ex.Message}"); }
+                    catch (Exception ex) { CrashReporter.WriteText("保存到公共下载目录异常", ex.ToString()); }
                 }
 
                 if (savedTo != null)
                 {
+                    CrashReporter.WriteText("下载完成", $"{task.DisplayTitle} → {savedTo}");
                     view.SetStatus($"已保存到「{savedTo}」：{task.DisplayTitle}");
                     // 应用内目录里的副本对用户不可见，保存成功后删除以节省空间
                     try { File.Delete(file); } catch { }

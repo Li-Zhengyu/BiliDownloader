@@ -1,4 +1,4 @@
-using Android.Provider;
+﻿using Android.Provider;
 using BiliDownloader;
 using System;
 using System.IO;
@@ -105,7 +105,7 @@ internal static class OutputFolder
             var docUri = global::Android.Provider.DocumentsContract.CreateDocument(resolver, dirUri, mime, name);
             if (docUri == null)
             {
-                BiliClient.Log($"复制到所选目录失败：系统拒绝在该目录创建 {name}");
+                CrashReporter.WriteText("复制到所选目录失败：系统拒绝创建", name);
                 return false;
             }
 
@@ -113,17 +113,16 @@ internal static class OutputFolder
             await using var output = resolver.OpenOutputStream(docUri);
             if (output == null)
             {
-                BiliClient.Log($"复制到所选目录失败：无法写入 {name}");
+                CrashReporter.WriteText("复制到所选目录失败：无法写入", name);
                 return false;
             }
 
             await input.CopyToAsync(output);
-            BiliClient.Log($"已复制到所选目录：{DisplayName}/{name}");
             return true;
         }
         catch (Exception ex)
         {
-            BiliClient.Log($"复制到所选目录失败：{ex.Message}");
+            CrashReporter.WriteText("复制到所选目录失败", ex.ToString());
             return false;
         }
     }

@@ -1,4 +1,4 @@
-using Android.Content;
+﻿using Android.Content;
 using Android.OS;
 using Android.Provider;
 using System;
@@ -36,7 +36,7 @@ internal static class PublicStorage
             var uri = resolver.Insert(collection, values);
             if (uri == null)
             {
-                BiliClient.Log($"保存到公共下载目录失败：无法创建 {name}");
+                CrashReporter.WriteText("保存到公共下载目录失败：无法创建", name);
                 return null;
             }
 
@@ -53,12 +53,11 @@ internal static class PublicStorage
                 values.Put("is_pending", 0);
                 resolver.Update(uri, values, null, null);
 
-                BiliClient.Log($"已保存到公共下载目录：下载/{Folder}/{name}");
                 return $"下载/{Folder}/{name}";
             }
             catch (Exception ex)
             {
-                BiliClient.Log($"保存到公共下载目录失败：{ex.Message}");
+                CrashReporter.WriteText("保存到公共下载目录失败", ex.ToString());
                 try { resolver.Delete(uri, null, null); } catch { }
                 return null;
             }
@@ -72,12 +71,11 @@ internal static class PublicStorage
                     .AbsolutePath!, Folder);
             Directory.CreateDirectory(dir);
             File.Copy(filePath, Path.Combine(dir, name), true);
-            BiliClient.Log($"已保存到公共下载目录：下载/{Folder}/{name}");
             return $"下载/{Folder}/{name}";
         }
         catch (Exception ex)
         {
-            BiliClient.Log($"保存到公共下载目录失败：{ex.Message}");
+            CrashReporter.WriteText("保存到公共下载目录失败", ex.ToString());
             return null;
         }
     }
