@@ -154,7 +154,13 @@ public partial class MobileMainView : UserControl
         if (string.IsNullOrEmpty(url)) { SetStatus("请输入视频链接或 BV 号"); return; }
 
         var (type, id) = await BiliClient.ParseUrlAsync(url);
-        if (type != "video") { SetStatus("无法识别链接，请粘贴包含 BV 号 / av 号的视频链接"); return; }
+        if (type != "video")
+        {
+            // 短链请求失败时把具体原因留在崩溃日志里，界面上只提示用户粘贴完整链接
+            if (!string.IsNullOrEmpty(id)) CrashReporter.WriteText("短链解析失败", id);
+            SetStatus("无法识别链接，请粘贴包含 BV 号 / av 号的视频链接");
+            return;
+        }
 
         BtnParse.IsEnabled = false;
         BtnParse.Content = "解析中...";

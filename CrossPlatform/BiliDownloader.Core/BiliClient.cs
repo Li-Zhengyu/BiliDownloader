@@ -18,6 +18,25 @@ public static class BiliClient
     private static readonly HttpClient _http;
     private static readonly string _buvid3;
 
+    /// <summary>
+    /// 短链解析专用客户端：强制使用托管 SocketsHttpHandler 并关闭自动跳转，
+    /// Android 原生 HTTP 栈在处理 b23.tv 这种跨站 302 时会抛 Java RuntimeException。
+    /// </summary>
+    private static readonly HttpClient _shortLinkHttp = CreateShortLinkClient();
+
+    private static HttpClient CreateShortLinkClient()
+    {
+        var handler = new SocketsHttpHandler
+        {
+            AllowAutoRedirect = false,
+            AutomaticDecompression = DecompressionMethods.All,
+            MaxConnectionsPerServer = 4
+        };
+        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) };
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", UserAgent);
+        return client;
+    }
+
     static BiliClient()
     {
         var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All, MaxConnectionsPerServer = 16 };
@@ -238,21 +257,38 @@ public static class BiliClient
 
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, shortUrl);
-            req.Headers.TryAddWithoutValidation("User-Agent", UserAgent);
-            using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+            // 手动跟随 302：Android 的系统 HTTP 实现自动重定向不稳定，逐跳处理更可靠
+            var url = shortUrl;
+            for (var hop = 0; hop < 5; hop++)
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                req.Headers.TryAddWithoutValidation("User-Agent", UserAgent);
+                using var resp = await _shortLinkHttp.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
-            var finalUrl = resp.RequestMessage?.RequestUri?.ToString() ?? "";
-            var byUrl = ParseUrl(finalUrl);
-            if (byUrl.Type != "unknown") return byUrl;
+                var current = resp.RequestMessage?.RequestUri?.ToString() ?? url;
+                var location = resp.Headers.Location?.ToString();
+                Log($"[ParseUrlAsync] {current} -> {(int)resp.StatusCode} {location}");
 
-            // 少数短链跳转后地址里仍没有 BV，再从页面内容里找
-            var html = await resp.Content.ReadAsStringAsync();
-            return ParseUrl(html);
-        }
-        catch
-        {
+                var byUrl = ParseUrl(current);
+                if (byUrl.Type != "unknown" && current != shortUrl) return byUrl;
+
+                if (string.IsNullOrEmpty(location))
+                {
+                    // 已经到最终页面：页面里一般带 canonical BV 号
+                    var html = await resp.Content.ReadAsStringAsync();
+                    return ParseUrl(html);
+                }
+
+                url = location.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                    ? location
+                    : new Uri(new Uri(url), location).ToString();
+            }
             return ("unknown", "");
+        }
+        catch (Exception ex)
+        {
+            Log($"[ParseUrlAsync] 短链解析失败 {shortUrl}: {ex.GetType().Name} {ex.Message}");
+            return ("unknown", $"短链请求失败：{ex.GetType().Name} {ex.Message}");
         }
     }
 
