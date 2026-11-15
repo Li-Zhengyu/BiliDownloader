@@ -13,6 +13,10 @@ public partial class MobileApp : Avalonia.Application
     {
         CrashReporter.Write("MobileApp.Initialize 开始", null);
 
+        // 先确定主题变体再加载样式：避免加载完再切换变体导致整套主题资源重建
+        ThemeStore.Load();
+        ThemeStore.Apply();
+
         // 手机端没有 ffmpeg：注册系统 MediaMuxer 合流，保证只输出可直接播放的 MP4
         DownloadProcessor.CustomMuxer = AndroidMp4Muxer.TryMux;
 
@@ -30,9 +34,6 @@ public partial class MobileApp : Avalonia.Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        ThemeStore.Load();
-        ThemeStore.Apply();
-
         // Android 使用单视图生命周期（ISingleViewApplicationLifetime）
         if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
         {

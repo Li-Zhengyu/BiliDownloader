@@ -25,7 +25,9 @@ public partial class MobileMainView : UserControl
 
     public MobileMainView()
     {
+        CrashReporter.WriteText("MobileMainView 构造开始", null);
         InitializeComponent();
+        CrashReporter.WriteText("MobileMainView 构造完成", null);
         Loaded += OnLoaded;
     }
 
@@ -33,6 +35,7 @@ public partial class MobileMainView : UserControl
     {
         if (_initialized) return;
         _initialized = true;
+        CrashReporter.WriteText("MobileMainView.OnLoaded 开始", null);
 
         Config.Load();
         OutputFolder.Load();
@@ -62,13 +65,15 @@ public partial class MobileMainView : UserControl
             Dispatcher.UIThread.Post(() => ApplySharedLink(pendingLink));
         }
         UpdateQueueUI();
-        _ = LoadBackgroundAsync();
+        // 背景帧解码放到首帧渲染之后，避免拖慢冷启动
+        DispatcherTimer.RunOnce(() => _ = LoadBackgroundAsync(), TimeSpan.FromMilliseconds(900));
 
         // 滑动期间暂停背景帧切换，停止后再恢复，保证滚动手感
         MainScroll.ScrollChanged += OnMainScrollChanged;
 
         // 部分机型启动时会把滚动位置带到中部，这里复位到顶部
         Dispatcher.UIThread.Post(() => MainScroll.Offset = new Vector(0, 0), DispatcherPriority.Loaded);
+        CrashReporter.WriteText("MobileMainView.OnLoaded 结束", null);
     }
 
     private void FillTheme()
@@ -385,6 +390,7 @@ public partial class MobileMainView : UserControl
         var gate = new SemaphoreSlim(max);
 
         SetStatus($"开始下载 {tasks.Count} 个任务（并行 {max}）...");
+        MainActivity.RequestNotificationPermissionIfNeeded();
         DownloadForegroundService.Start($"正在下载 {tasks.Count} 个任务");
         if (Config.Current.AndroidOverlay && DownloadOverlay.HasPermission())
             DownloadOverlay.Show("准备下载...", 0);
@@ -786,7 +792,7 @@ public partial class MobileMainView : UserControl
     {
         try
         {
-            var uri = await ImagePickerActivity.PickAsync();
+            var uri = await MainActivity.PickImageAsync();
             if (string.IsNullOrEmpty(uri)) return;
 
             if (!await BackgroundStore.SaveUserBackgroundAsync(uri))

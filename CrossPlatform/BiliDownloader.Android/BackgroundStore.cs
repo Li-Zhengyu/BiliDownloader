@@ -38,7 +38,7 @@ internal static class BackgroundStore
     }
 
     /// <summary>后台线程加载全部内置帧：按 120px 宽解码（模糊壁纸放大无损观感），约 18MB 内存。</summary>
-    public static Task<List<Bitmap>> LoadFramesAsync() => Task.Run(() =>
+    public static Task<List<Bitmap>> LoadFramesAsync() => Task.Run(async () =>
     {
         var frames = new List<Bitmap>(FrameCount);
         for (var i = 0; i < FrameCount; i++)
@@ -46,6 +46,9 @@ internal static class BackgroundStore
             var uri = new Uri(string.Format(FrameUriFormat, i));
             using var stream = AssetLoader.Open(uri);
             frames.Add(Bitmap.DecodeToWidth(stream, 120));
+
+            // 每 16 帧让出一次 CPU，避免解码一直抢占渲染线程造成卡顿
+            if (i % 16 == 15) await Task.Delay(1).ConfigureAwait(false);
         }
         return frames;
     });

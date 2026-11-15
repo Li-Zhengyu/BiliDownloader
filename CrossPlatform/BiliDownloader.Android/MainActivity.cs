@@ -44,7 +44,8 @@ public class MainActivity : AvaloniaMainActivity<MobileApp>
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
         ConfigureAndroidPaths();
-        CrashReporter.Install(PlatformInfo.AndroidDataDirOverride);
+        // 日志统一写到外部可读目录（Android/data/.../files/BiliDownloader/crash.log），方便用户取日志反馈
+        CrashReporter.Install(ResolveExternalLogDirectory());
         CrashReporter.WriteText("MainActivity.CustomizeAppBuilder 开始", null);
 
         try
@@ -70,7 +71,6 @@ public class MainActivity : AvaloniaMainActivity<MobileApp>
             Instance = this;
             ApplyScreenOrientation();
             HandleShareIntent(Intent);
-            RequestNotificationPermission();
             CrashReporter.WriteText("MainActivity.OnCreate 完成", null);
         }
         catch (Exception ex)
@@ -93,8 +93,38 @@ public class MainActivity : AvaloniaMainActivity<MobileApp>
     public static MainActivity? Instance { get; private set; }
 
     private const int FolderRequestCode = 1002;
+    private const int ImageRequestCode = 1003;
 
     private static TaskCompletionSource<string?>? _folderTask;
+    private static TaskCompletionSource<string?>? _imageTask;
+
+    /// <summary>挑选背景图片（同样由 Activity 自己发起，避免返回时重建 Activity）。</summary>
+    public static Task<string?> PickImageAsync()
+    {
+        var activity = Instance;
+        if (activity == null) return Task.FromResult<string?>(null);
+        if (_imageTask is { Task.IsCompleted: false }) return _imageTask.Task;
+
+        _imageTask = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        activity.RunOnUiThread(() =>
+        {
+            try
+            {
+                var intent = new Intent(Intent.ActionOpenDocument);
+                intent.SetType("image/*");
+                intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantPersistableUriPermission);
+                activity.StartActivityForResult(intent, ImageRequestCode);
+            }
+            catch (Exception ex)
+            {
+                CrashReporter.Write("打开图片选择器失败", ex);
+                _imageTask?.TrySetResult(null);
+                _imageTask = null;
+            }
+        });
+
+        return _imageTask.Task;
+    }
 
     /// <summary>
     /// 由 Activity 自己发起系统目录选择（不能放到独立任务里，否则返回时重建 Activity 会崩）。
@@ -131,6 +161,30 @@ public class MainActivity : AvaloniaMainActivity<MobileApp>
     protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
     {
         base.OnActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == ImageRequestCode)
+        {
+            string? imageUri = null;
+            try
+            {
+                if (resultCode == Result.Ok && data?.Data != null)
+                {
+                    var picked = data.Data!;
+                    imageUri = picked.ToString();
+                    try { ContentResolver?.TakePersistableUriPermission(picked, ActivityFlags.GrantReadUriPermission); }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashReporter.Write("处理图片选择结果失败", ex);
+            }
+
+            _imageTask?.TrySetResult(imageUri);
+            _imageTask = null;
+            return;
+        }
+
         if (requestCode != FolderRequestCode) return;
 
         string? uri = null;
@@ -160,13 +214,20 @@ public class MainActivity : AvaloniaMainActivity<MobileApp>
         _folderTask = null;
     }
 
-    /// <summary>Android 13+ 需要用户授权才能显示前台服务通知。</summary>
-    private void RequestNotificationPermission()
+    /// <summary>只在真正开始下载时申请通知权限，避免拖慢每次启动。</summary>
+    public static void RequestNotificationPermissionIfNeeded()
     {
         try
         {
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu)
-                RequestPermissions(new[] { "android.permission.POST_NOTIFICATIONS" }, 200);
+            if (Build.VERSION.SdkInt < BuildVersionCodes.Tiramisu) return;
+
+            var context = global::Android.App.Application.Context;
+            var granted = context.CheckSelfPermission("android.permission.POST_NOTIFICATIONS")
+                          == global::Android.Content.PM.Permission.Granted;
+            if (granted) return;
+
+            Instance?.RunOnUiThread(() =>
+                Instance?.RequestPermissions(new[] { "android.permission.POST_NOTIFICATIONS" }, 200));
         }
         catch
         {

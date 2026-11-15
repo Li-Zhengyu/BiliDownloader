@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Android.Content;
 using Android.OS;
@@ -19,6 +21,9 @@ internal static class CrashReporter
 {
     private static bool _installed;
     private static string? _logPath;
+    private static readonly ConcurrentQueue<string> _pending = new();
+    private static readonly object _fileLock = new();
+    private static int _flushing;
 
     public static string? LogPath => _logPath;
 
@@ -62,14 +67,11 @@ internal static class CrashReporter
         try
         {
             var sb = new StringBuilder();
-            sb.Append('[').Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")).Append("] ").Append(stage);
+            sb.Append('[').Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")).Append("] ").Append(stage);
             if (!string.IsNullOrEmpty(detail))
                 sb.AppendLine().Append(detail);
             sb.AppendLine();
             content = sb.ToString();
-
-            if (_logPath != null)
-                File.AppendAllText(_logPath, content);
         }
         catch
         {
@@ -77,7 +79,51 @@ internal static class CrashReporter
         }
 
         if (crash)
+        {
+            // 崩溃必须落盘：先把排队中的日志同步写掉，再写本次异常
+            lock (_fileLock)
+            {
+                while (_pending.TryDequeue(out var queued)) AppendFile(queued);
+                AppendFile(content);
+            }
             WritePublicCopy(content);
+            return;
+        }
+
+        // 普通启动日志走后台队列，避免启动过程中同步写外部存储拖慢冷启动
+        _pending.Enqueue(content);
+        StartFlush();
+    }
+
+    private static void StartFlush()
+    {
+        if (Interlocked.CompareExchange(ref _flushing, 1, 0) != 0) return;
+        _ = Task.Run(FlushLoop);
+    }
+
+    private static void FlushLoop()
+    {
+        try
+        {
+            while (_pending.TryDequeue(out var queued)) AppendFile(queued);
+        }
+        finally
+        {
+            Volatile.Write(ref _flushing, 0);
+            if (!_pending.IsEmpty) StartFlush();
+        }
+    }
+
+    private static void AppendFile(string content)
+    {
+        try
+        {
+            if (_logPath != null) File.AppendAllText(_logPath, content);
+        }
+        catch
+        {
+            // 忽略写日志失败
+        }
     }
 
     /// <summary>把日志写到公共下载目录（Android 10+ 走 MediaStore，无需存储权限）。</summary>
