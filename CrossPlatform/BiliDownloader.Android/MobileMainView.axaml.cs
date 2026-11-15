@@ -306,7 +306,7 @@ public partial class MobileMainView : UserControl
     {
         try
         {
-            var uri = await FolderPickerActivity.PickAsync();
+            var uri = await MainActivity.PickFolderAsync();
             if (string.IsNullOrEmpty(uri)) return;
 
             OutputFolder.Save(uri);

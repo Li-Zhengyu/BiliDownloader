@@ -1,4 +1,5 @@
 using Android.App;
+using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
@@ -7,6 +8,7 @@ using Avalonia.Android;
 using BiliDownloader;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace BiliDownloader.Android;
 
@@ -65,6 +67,7 @@ public class MainActivity : AvaloniaMainActivity<MobileApp>
         {
             CrashReporter.WriteText("MainActivity.OnCreate 开始", null);
             base.OnCreate(savedInstanceState);
+            Instance = this;
             ApplyScreenOrientation();
             HandleShareIntent(Intent);
             RequestNotificationPermission();
@@ -75,7 +78,86 @@ public class MainActivity : AvaloniaMainActivity<MobileApp>
             // 启动阶段异常不要静默闪退：写日志并弹窗提示，方便截图反馈
             CrashReporter.Write("MainActivity.OnCreate 失败", ex);
             ShowStartupError(ex);
+            // 必须继续抛出：吞掉异常会让系统在 onCreate 结束时抛 SuperNotCalledException，定位信息全丢
+            throw;
         }
+    }
+
+    protected override void OnDestroy()
+    {
+        if (ReferenceEquals(Instance, this)) Instance = null;
+        base.OnDestroy();
+    }
+
+    /// <summary>当前存活的 MainActivity，供 Avalonia 界面发起系统对话框。</summary>
+    public static MainActivity? Instance { get; private set; }
+
+    private const int FolderRequestCode = 1002;
+
+    private static TaskCompletionSource<string?>? _folderTask;
+
+    /// <summary>
+    /// 由 Activity 自己发起系统目录选择（不能放到独立任务里，否则返回时重建 Activity 会崩）。
+    /// </summary>
+    public static Task<string?> PickFolderAsync()
+    {
+        var activity = Instance;
+        if (activity == null) return Task.FromResult<string?>(null);
+        if (_folderTask is { Task.IsCompleted: false }) return _folderTask.Task;
+
+        _folderTask = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        activity.RunOnUiThread(() =>
+        {
+            try
+            {
+                var intent = new Intent(Intent.ActionOpenDocumentTree);
+                intent.AddFlags(ActivityFlags.GrantReadUriPermission
+                                | ActivityFlags.GrantWriteUriPermission
+                                | ActivityFlags.GrantPersistableUriPermission
+                                | ActivityFlags.GrantPrefixUriPermission);
+                activity.StartActivityForResult(intent, FolderRequestCode);
+            }
+            catch (Exception ex)
+            {
+                CrashReporter.Write("打开目录选择器失败", ex);
+                _folderTask?.TrySetResult(null);
+                _folderTask = null;
+            }
+        });
+
+        return _folderTask.Task;
+    }
+
+    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
+    {
+        base.OnActivityResult(requestCode, resultCode, data);
+        if (requestCode != FolderRequestCode) return;
+
+        string? uri = null;
+        try
+        {
+            if (resultCode == Result.Ok && data?.Data != null)
+            {
+                var picked = data.Data!;
+                uri = picked.ToString();
+                try
+                {
+                    ContentResolver?.TakePersistableUriPermission(picked,
+                        ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
+                }
+                catch
+                {
+                    // 部分系统不允许持久化，仅本次会话可用
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashReporter.Write("处理目录选择结果失败", ex);
+        }
+
+        _folderTask?.TrySetResult(uri);
+        _folderTask = null;
     }
 
     /// <summary>Android 13+ 需要用户授权才能显示前台服务通知。</summary>
